@@ -2,7 +2,6 @@ import { createSignal } from "solid-js";
 import { Mail, Lock, User } from "lucide-solid";
 import { useNavigate } from "@solidjs/router";
 
-// Tambahkan type User
 type User = {
   name: string;
   email: string;
@@ -27,17 +26,14 @@ export default function Register() {
       return;
     }
 
-    // Ambil daftar user dari localStorage (atau buat array baru jika belum ada)
     const users: User[] = JSON.parse(localStorage.getItem("users") || "[]");
 
-    // Cek apakah email sudah dipakai
-    const isUsed = users.some((u: User) => u.email === email());
+    const isUsed = users.some((u) => u.email === email());
     if (isUsed) {
       alert("Email sudah terdaftar!");
       return;
     }
 
-    // Tambahkan user baru
     const newUser: User = {
       name: name(),
       email: email(),
@@ -46,8 +42,6 @@ export default function Register() {
 
     const updatedUsers = [...users, newUser];
     localStorage.setItem("users", JSON.stringify(updatedUsers));
-
-    // Simpan session sebagai currentUser
     localStorage.setItem("currentUser", JSON.stringify(newUser));
 
     alert("Registrasi berhasil! Anda akan diarahkan ke Dashboard.");
@@ -55,70 +49,77 @@ export default function Register() {
   };
 
   return (
-    <div class="min-h-screen flex items-center justify-center bg-gradient-to-b from-[#96AAC5] to-[#FCEBEC] font-sans">
-      <div class="bg-white/40 backdrop-blur-lg p-8 rounded-lg w-full max-w-sm shadow-md">
-        <h2 class="text-2xl font-bold text-center text-[#3F5B8B] mb-2">Sign Up for CampRent</h2>
-        <p class="text-center text-xs text-[#7A7A8B] mb-6">Fast, secure, and easy equipment rental.</p>
+    <main class="min-h-screen flex items-center justify-center bg-gradient-to-b from-[#96AAC5] to-[#FCEBEC] font-sans px-4">
+      <div class="bg-white/40 backdrop-blur-md p-8 rounded-xl w-full max-w-sm shadow-md border border-white/20">
+        <h1 class="text-2xl font-bold text-center text-[#3F5B8B] mb-1">Daftar ke CampRent</h1>
+        <p class="text-xs text-center text-[#6C5E82] mb-6">
+          Sewa perlengkapan camping dengan cepat & mudah.
+        </p>
 
-        {/* Input Name */}
+        {/* Nama */}
+        <label class="block text-xs text-[#2E365A] mb-1 ml-1">Nama Lengkap</label>
         <div class="flex items-center bg-white rounded px-3 mb-4 shadow-sm">
           <User class="text-gray-400 h-4 w-4 mr-2" />
           <input
             type="text"
-            placeholder="Enter your name"
+            placeholder="Nama lengkap"
             class="w-full py-2 outline-none bg-transparent text-sm text-[#2E365A]"
             onInput={(e) => setName(e.currentTarget.value)}
           />
         </div>
 
-        {/* Input Email */}
+        {/* Email */}
+        <label class="block text-xs text-[#2E365A] mb-1 ml-1">Email</label>
         <div class="flex items-center bg-white rounded px-3 mb-4 shadow-sm">
           <Mail class="text-gray-400 h-4 w-4 mr-2" />
           <input
             type="email"
-            placeholder="Enter your email address"
+            placeholder="Email aktif"
             class="w-full py-2 outline-none bg-transparent text-sm text-[#2E365A]"
             onInput={(e) => setEmail(e.currentTarget.value)}
           />
         </div>
 
-        {/* Input Password */}
+        {/* Password */}
+        <label class="block text-xs text-[#2E365A] mb-1 ml-1">Password</label>
         <div class="flex items-center bg-white rounded px-3 mb-4 shadow-sm">
           <Lock class="text-gray-400 h-4 w-4 mr-2" />
           <input
             type="password"
-            placeholder="Enter your password"
+            placeholder="Minimal 6 karakter"
             class="w-full py-2 outline-none bg-transparent text-sm text-[#2E365A]"
             onInput={(e) => setPassword(e.currentTarget.value)}
           />
         </div>
 
-        {/* Input Confirm Password */}
+        {/* Konfirmasi Password */}
+        <label class="block text-xs text-[#2E365A] mb-1 ml-1">Konfirmasi Password</label>
         <div class="flex items-center bg-white rounded px-3 mb-6 shadow-sm">
           <Lock class="text-gray-400 h-4 w-4 mr-2" />
           <input
             type="password"
-            placeholder="Confirm your password"
+            placeholder="Ulangi password"
             class="w-full py-2 outline-none bg-transparent text-sm text-[#2E365A]"
             onInput={(e) => setConfirmPassword(e.currentTarget.value)}
           />
         </div>
 
-        {/* Submit Button */}
+        {/* Tombol Daftar */}
         <button
-          class="w-full bg-[#D0797F] text-white py-2 rounded hover:bg-[#A801A7] transition"
           onClick={handleRegister}
+          class="w-full bg-[#D0797F] text-white py-2 rounded-lg font-semibold hover:bg-[#A801A7] transition"
         >
-          Sign Up
+          Daftar Sekarang
         </button>
 
+        {/* Link ke login */}
         <p class="text-xs text-center mt-4 text-[#7A7A8B]">
-          Already have an account?{" "}
-          <a href="/login" class="text-[#6C5E82] hover:underline">
-            Log in here
+          Sudah punya akun?{" "}
+          <a href="/login" class="text-[#6C5E82] hover:underline font-medium">
+            Masuk di sini
           </a>
         </p>
       </div>
-    </div>
+    </main>
   );
 }
