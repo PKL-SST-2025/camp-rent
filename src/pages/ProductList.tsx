@@ -2,16 +2,19 @@ import { createSignal, For, onMount } from "solid-js";
 import { A } from "@solidjs/router";
 
 // Import gambar satu per satu
-import tendaImg from "../assets/tenda.png";
-import komporImg from "../assets/kompor.png";
-import lampuImg from "../assets/lampu.png";
-import carrierImg from "../assets/carrier.png";
-import sleepbagImg from "../assets/sleepbag.png";
-import headlampImg from "../assets/headlamp.png";
-import flysheetImg from "../assets/flysheet.png";
-import gasImg from "../assets/gas.png";
-import cooksetImg from "../assets/cookset.png";
-import matrasImg from "../assets/matras.png";
+<div>
+  <h1>Produk</h1>
+<img src="/images/tenda.png" alt="Tenda" />
+<img src="/images/kompor.png" alt="Kompor" />
+<img src="/images/lampu.png" alt="Lampu" />
+<img src="/images/carrier.png" alt="Carrier" />
+<img src="/images/sleepbag.png" alt="Sleeping Bag" />
+<img src="/images/headlamp.png" alt="Headlamp" />
+<img src="/images/flysheet.png" alt="Flysheet" />
+<img src="/images/gas.png" alt="Gas" />
+<img src="/images/cookset.png" alt="Cookset" />
+<img src="/images/matras.png" alt="Matras" />
+</div>
 
 // Tipe produk
 type Product = {
@@ -26,17 +29,18 @@ type Product = {
 };
 
 const defaultProducts: Product[] = [
-  { id: 1, name: "Tenda Dome", price: 50000, stock: 4, category: "tenda", img: tendaImg, badge: "Paling Laris", badgeColor: "bg-yellow-300" },
-  { id: 2, name: "Kompor Lipat", price: 10000, stock: 10, category: "peralatan", img: komporImg },
-  { id: 3, name: "Lampu Camping", price: 10000, stock: 10, category: "penerangan", img: lampuImg, badge: "Promo", badgeColor: "bg-green-300" },
-  { id: 4, name: "Carrier 60L", price: 40000, stock: 5, category: "tas", img: carrierImg },
-  { id: 5, name: "Sleeping Bag", price: 25000, stock: 6, category: "tidur", img: sleepbagImg },
-  { id: 6, name: "Headlamp LED", price: 20000, stock: 8, category: "penerangan", img: headlampImg },
-  { id: 7, name: "Flysheet", price: 15000, stock: 12, category: "tenda", img: flysheetImg },
-  { id: 8, name: "Gas Kaleng", price: 8000, stock: 20, category: "peralatan", img: gasImg },
-  { id: 9, name: "Cooking Set", price: 30000, stock: 7, category: "peralatan", img: cooksetImg },
-  { id: 10, name: "Matras", price: 10000, stock: 10, category: "tidur", img: matrasImg },
+  { id: 1, name: "Tenda Dome", price: 50000, stock: 4, category: "tenda", img: "/images/tenda.png", badge: "Paling Laris", badgeColor: "bg-yellow-300" },
+  { id: 2, name: "Kompor Lipat", price: 10000, stock: 10, category: "peralatan", img: "/images/kompor.png" },
+  { id: 3, name: "Lampu Camping", price: 10000, stock: 10, category: "penerangan", img: "/images/lampu.png", badge: "Promo", badgeColor: "bg-green-300" },
+  { id: 4, name: "Carrier 60L", price: 40000, stock: 5, category: "tas", img: "/images/carrier.png" },
+  { id: 5, name: "Sleeping Bag", price: 25000, stock: 6, category: "tidur", img: "/images/sleepbag.png" },
+  { id: 6, name: "Headlamp LED", price: 20000, stock: 8, category: "penerangan", img: "/images/headlamp.png" },
+  { id: 7, name: "Flysheet", price: 15000, stock: 12, category: "tenda", img: "/images/flysheet.png" },
+  { id: 8, name: "Gas Kaleng", price: 8000, stock: 20, category: "peralatan", img: "/images/gas.png" },
+  { id: 9, name: "Cooking Set", price: 30000, stock: 7, category: "peralatan", img: "/images/cookset.png" },
+  { id: 10, name: "Matras", price: 10000, stock: 10, category: "tidur", img: "/images/matras.png" },
 ];
+
 
 const categories = [
   { id: "semua", label: "Semua" },
