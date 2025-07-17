@@ -19,16 +19,16 @@ type Ulasan = {
 
 // Dummy Data Produk
 const dummyProducts: Product[] = [
-  { id: 1, name: "Tenda Dome", img: "src/assets/tenda.png" },
-  { id: 2, name: "Kompor Lipat", img: "src/assets/kompor.png" },
-  { id: 3, name: "Lampu Camping", img: "src/assets/lampu.png" },
-  { id: 4, name: "Carrier 60L", img: "src/assets/carrier.png" },
-  { id: 5, name: "Sleeping Bag", img: "src/assets/sleepbag.png" },
-  { id: 6, name: "Headlamp LED", img: "src/assets/headlamp.png" },
-  { id: 7, name: "Flysheet", img: "src/assets/flysheet.png" },
-  { id: 8, name: "Gas Kaleng", img: "src/assets/gas.png" },
-  { id: 9, name: "Cooking Set", img: "src/assets/cookset.png" },
-  { id: 10, name: "Matras", img: "src/assets/matras.png" },
+  { id: 1, name: "Tenda Dome", img: "../assets/tenda.png" },
+  { id: 2, name: "Kompor Lipat", img: "../assets/kompor.png" },
+  { id: 3, name: "Lampu Camping", img: "../assets/lampu.png" },
+  { id: 4, name: "Carrier 60L", img: "../assets/carrier.png" },
+  { id: 5, name: "Sleeping Bag", img: "../assets/sleepbag.png" },
+  { id: 6, name: "Headlamp LED", img: "../assets/headlamp.png" },
+  { id: 7, name: "Flysheet", img: "../assets/flysheet.png" },
+  { id: 8, name: "Gas Kaleng", img: "../assets/gas.png" },
+  { id: 9, name: "Cooking Set", img: "../assets/cookset.png" },
+  { id: 10, name: "Matras", img: "../assets/matras.png" },
 ];
 
 export default function Ulasan() {
