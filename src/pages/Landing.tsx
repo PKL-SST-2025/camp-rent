@@ -20,7 +20,7 @@ export default function Landing() {
       </header>
 
       {/* Hero */}
-      <section class="relative bg-cover bg-center h-[500px] flex items-center justify-center" style="background-image: url('../assets/hero-camping.jpg')">
+      <section class="relative bg-cover bg-center h-[500px] flex items-center justify-center" style="background-image: url('/hero-camping.jpg')">
         <div class="bg-black bg-opacity-40 absolute inset-0"></div>
         <div class="relative z-10 text-center text-white px-4">
           <h2 class="text-3xl md:text-5xl font-bold mb-4">Sewa Alat Camping Mudah & Cepat</h2>
@@ -55,18 +55,18 @@ export default function Landing() {
         <h2 class="text-2xl font-bold mb-6 text-center text-white">Alat Camping Terpopuler</h2>
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
           {[
-            { name: "Tenda 2 orang", price: "Rp.50.000/hari", img: "../assets/tenda.png" },
-            { name: "Kompor Lipat", price: "Rp.20.000/hari", img: "../assets/kompor.png" },
-            { name: "Nesting", price: "Rp.20.000/hari", img: "../assets/nesting.png" },
-            { name: "Headlamp", price: "Rp.15.000/hari", img: "../assets/headlamp.png" },
-          ].map((item) => (
-            <div class="bg-white rounded-lg shadow p-4 text-center">
-              <img src={item.img} alt={item.name} class="mx-auto h-24 mb-2" />
-              <h3 class="font-semibold">{item.name}</h3>
-              <p class="text-sm text-gray-500">{item.price}</p>
-              <button class="mt-2 bg-[#D0797F] text-white px-4 py-1 rounded hover:bg-[#A801A7]">Sewa</button>
-            </div>
-          ))}
+  { name: "Tenda 2 orang", price: "Rp.50.000/hari", img: "/tenda.png" },
+  { name: "Kompor Lipat", price: "Rp.20.000/hari", img: "/kompor.png" },
+  { name: "Nesting", price: "Rp.20.000/hari", img: "/nesting.png" },
+  { name: "Headlamp", price: "Rp.15.000/hari", img: "/headlamp.png" },
+].map((item) => (
+  <div class="bg-white rounded-lg shadow p-4 text-center">
+    <img src={item.img} alt={item.name} class="mx-auto h-24 mb-2" />
+    <h3 class="font-semibold">{item.name}</h3>
+    <p class="text-sm text-gray-500">{item.price}</p>
+    <button class="mt-2 bg-[#D0797F] text-white px-4 py-1 rounded hover:bg-[#A801A7]">Sewa</button>
+  </div>
+))}
         </div>
       </section>
 
