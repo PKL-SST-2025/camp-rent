@@ -13,6 +13,7 @@ interface OrderData {
   subtotal: number;
   shipping: number;
   total: number;
+  paymentMethod?: "cod" | "transfer"; // ✅ Tambahkan tipe
 }
 
 export default function CheckoutSummary() {
@@ -23,37 +24,53 @@ export default function CheckoutSummary() {
 
   const [orderData] = createSignal<OrderData>(parsed);
 
- const handleConfirmOrder = () => {
-  const checkout = orderData();
+  // Hitung total dinamis tergantung metode bayar
+  const getAdjustedTotal = () => {
+    const baseTotal = orderData().total;
+    if (orderData().paymentMethod === "transfer") {
+      return baseTotal + 2500;
+    }
+    return baseTotal; // COD tidak ada biaya tambahan
+  };
 
-  // Ambil data lama dari localStorage
-  const existing = JSON.parse(localStorage.getItem("riwayatSewa") || "[]");
+  const getPaymentNote = () => {
+    switch (orderData().paymentMethod) {
+      case "cod":
+        return "Termasuk biaya ongkir COD.";
+      case "transfer":
+        return "Biaya admin bank Rp.2.500.";
+      default:
+        return "Metode pembayaran belum dipilih.";
+    }
+  };
 
-  // Ambil tanggal hari ini
-  const now = new Date();
-  const formatter = new Intl.DateTimeFormat("id-ID", {
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-  });
-  const today = formatter.format(now);
+  const handleConfirmOrder = () => {
+    const checkout = orderData();
 
-  // Format untuk setiap item dalam checkoutData
-  const newEntries = checkout.items.map(item => ({
-    name: item.name,
-    date: today, // atau gunakan range jika tersedia
-    duration: `${item.days} Hari`,
-    price: `Rp.${item.total.toLocaleString("id-ID")},00`,
-    status: "Diproses",
-    statusColor: "bg-yellow-400"
-  }));
+    const existing = JSON.parse(localStorage.getItem("riwayatSewa") || "[]");
 
-  // Simpan data baru ke localStorage
-  const updated = [...existing, ...newEntries];
-  localStorage.setItem("riwayatSewa", JSON.stringify(updated));
+    const now = new Date();
+    const formatter = new Intl.DateTimeFormat("id-ID", {
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+    });
+    const today = formatter.format(now);
 
-  alert("✅ Pesanan berhasil dikonfirmasi!");
-};
+    const newEntries = checkout.items.map(item => ({
+      name: item.name,
+      date: today,
+      duration: `${item.days} Hari`,
+      price: `Rp.${item.total.toLocaleString("id-ID")},00`,
+      status: "Diproses",
+      statusColor: "bg-yellow-400"
+    }));
+
+    const updated = [...existing, ...newEntries];
+    localStorage.setItem("riwayatSewa", JSON.stringify(updated));
+
+    alert("✅ Pesanan berhasil dikonfirmasi!");
+  };
 
   return (
     <div class="p-6 bg-[#F4F7FA] min-h-screen">
@@ -93,10 +110,17 @@ export default function CheckoutSummary() {
               <span>Ongkir</span>
               <span>Rp.{orderData().shipping.toLocaleString("id-ID")}</span>
             </div>
+            {orderData().paymentMethod === "transfer" && (
+              <div class="flex justify-between text-sm text-[#3F5B8B]">
+                <span>Biaya Admin</span>
+                <span>Rp.2.500</span>
+              </div>
+            )}
             <div class="flex justify-between font-bold text-lg text-[#2C4A6C] border-t pt-3">
               <span>Total Pembayaran</span>
-              <span>Rp.{orderData().total.toLocaleString("id-ID")}</span>
+              <span>Rp.{getAdjustedTotal().toLocaleString("id-ID")}</span>
             </div>
+            <p class="text-xs italic text-[#6C5E82] mt-1">{getPaymentNote()}</p>
           </div>
 
           <div class="flex justify-end mt-6">
