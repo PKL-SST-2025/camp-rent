@@ -29,8 +29,17 @@ export default function Checkout() {
     if (saved) setItems(JSON.parse(saved));
   });
 
-  const total = () =>
+  const subtotal = () =>
     items().reduce((acc, item) => acc + item.price * item.quantity, 0);
+
+  const getShippingCost = () => {
+    const method = formData().method;
+    if (method === "cod") return 10000;
+    if (method === "transfer") return 2500;
+    return 0; // ewallet atau kosong
+  };
+
+  const total = () => subtotal() + getShippingCost();
 
   const handleInputChange = (field: FormField, value: string | boolean) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -47,18 +56,19 @@ export default function Checkout() {
       alert("Harap setujui syarat dan ketentuan.");
       return;
     }
+
     const checkoutData = {
-  name: formData().name, // Tambahkan baris ini
-  items: items().map(item => ({
-    name: item.name,
-    days: item.quantity, // pastikan sesuai, karena kamu pakai "quantity" untuk hari
-    price: item.price,
-    total: item.price * item.quantity,
-  })),
-  subtotal: total(),
-  shipping: 10000,
-  total: total() + 10000,
-};
+      name: formData().name,
+      items: items().map((item) => ({
+        name: item.name,
+        days: item.quantity,
+        price: item.price,
+        total: item.price * item.quantity,
+      })),
+      subtotal: subtotal(),
+      shipping: getShippingCost(),
+      total: total(),
+    };
 
     localStorage.setItem("checkoutData", JSON.stringify(checkoutData));
     alert("✅ Checkout berhasil!");
@@ -117,8 +127,8 @@ export default function Checkout() {
             onInput={(e) => handleInputChange("method", e.currentTarget.value)}
           >
             <option value="">Pilih metode</option>
-            <option value="transfer">Transfer Bank</option>
-            <option value="cod">COD</option>
+            <option value="transfer">Transfer Bank (Biaya Admin Rp2.500)</option>
+            <option value="cod">COD (Ongkir Rp10.000)</option>
             <option value="ewallet">E-Wallet</option>
           </select>
         </div>

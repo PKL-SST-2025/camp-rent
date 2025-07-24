@@ -20,59 +20,78 @@ export default function Riwayat() {
   const columnDefs = [
     { headerName: "Nama Barang", field: "name", flex: 1 },
     {
-  headerName: "Tanggal Sewa",
-  field: "date",
-  flex: 1,
-  cellRenderer: (params: any) => {
-    try {
-      const startDateStr = params.value; // contoh: "2025-07-10"
-      const durationText = params.data?.duration; // contoh: "3 Hari"
-      const start = new Date(startDateStr);
-      const duration = parseInt(durationText); // ambil angka dari "3 Hari"
-      
-      if (isNaN(start.getTime()) || isNaN(duration)) return params.value;
+      headerName: "Tanggal Sewa",
+      field: "date",
+      flex: 1,
+      cellRenderer: (params: any) => {
+        try {
+          const startDateStr = params.value;
+          const durationText = params.data?.duration;
+          const start = new Date(startDateStr);
+          const duration = parseInt(durationText);
+          if (isNaN(start.getTime()) || isNaN(duration)) return params.value;
 
-      const end = new Date(start);
-      end.setDate(start.getDate() + duration);
+          const end = new Date(start);
+          end.setDate(start.getDate() + duration);
 
-      const formatter = new Intl.DateTimeFormat("id-ID", {
-        day: "2-digit",
-        month: "long",
-        year: "numeric",
-      });
+          const formatter = new Intl.DateTimeFormat("id-ID", {
+            day: "2-digit",
+            month: "long",
+            year: "numeric",
+          });
 
-      return `${formatter.format(start)} - ${formatter.format(end)}`;
-    } catch {
-      return params.value;
-    }
-  },
-},
-
+          return `${formatter.format(start)} - ${formatter.format(end)}`;
+        } catch {
+          return params.value;
+        }
+      },
+    },
     { headerName: "Durasi", field: "duration", flex: 1 },
     { headerName: "Total", field: "price", flex: 1 },
     {
-  headerName: "Status",
-  field: "status",
-  flex: 1,
-  cellRenderer: (params: any) => {
-    const status = params.value;
-    const id = params.data?.id;
-    const color =
-      status === "Diproses"
-        ? "bg-yellow-400"
-        : status === "Dikirim"
-        ? "bg-blue-400"
-        : "bg-green-400";
+      headerName: "Status",
+      field: "status",
+      flex: 1,
+      cellRenderer: (params: any) => {
+        const status = params.value;
+        const id = params.data?.id;
 
-    const link = document.createElement("a");
-    link.href = `/tracking/${id}`;
-    link.className = `px-3 py-1 rounded-full text-white text-xs font-medium ${color} hover:underline`;
-    link.textContent = status;
+        const nextStatus =
+          status === "Diproses" ? "Dikirim" : status === "Dikirim" ? "Selesai" : null;
 
-    return link;
-  },
-},
+        const color =
+          status === "Diproses"
+            ? "bg-yellow-400"
+            : status === "Dikirim"
+            ? "bg-blue-400"
+            : "bg-green-500";
 
+        const container = document.createElement("div");
+        container.className = "flex flex-col items-start gap-1";
+
+        const badge = document.createElement("div");
+        badge.className = `px-3 py-1 rounded-full text-white text-xs font-medium ${color}`;
+        badge.textContent = status;
+        container.appendChild(badge);
+
+        if (nextStatus) {
+          const btn = document.createElement("button");
+          btn.textContent = `Ubah ke "${nextStatus}"`;
+          btn.className =
+            "text-xs text-blue-700 underline hover:text-blue-900 transition";
+          btn.onclick = () => {
+            const updated = riwayat().map((item: any) =>
+              item.id === id ? { ...item, status: nextStatus } : item
+            );
+            setRiwayat(updated);
+            localStorage.setItem("riwayatSewa", JSON.stringify(updated));
+          };
+          container.appendChild(btn);
+        }
+
+        return container;
+      },
+    },
     {
       headerName: "Aksi",
       field: "id",
@@ -114,55 +133,53 @@ export default function Riwayat() {
   };
 
   return (
-    <>
-      <div class="max-w-6xl mx-auto">
-        {/* Header */}
-        <div class="bg-[#6C5E82] text-white p-6 rounded-2xl shadow mb-6 flex justify-between items-center">
-          <h2 class="text-xl font-semibold">Riwayat Pemesanan</h2>
-          <div class="flex items-center gap-3">
-            <select
-              class="bg-white text-[#3F5B8B] text-sm px-3 py-1 rounded shadow outline-none"
-              onInput={(e) => setFilterStatus(e.currentTarget.value)}
-            >
-              <option value="Semua">Semua</option>
-              <option value="Diproses">Diproses</option>
-              <option value="Dikirim">Dikirim</option>
-              <option value="Selesai">Selesai</option>
-            </select>
-            <button
-              class="bg-[#D0797F] hover:bg-red-500 text-white px-3 py-1 rounded text-sm flex items-center gap-1 shadow"
-              onClick={hapusSemua}
-            >
-              <Trash2 size={16} />
-              Hapus Semua
-            </button>
-          </div>
-        </div>
-
-        {/* AG Grid Table */}
-        <div
-          class="ag-theme-alpine"
-          style={{
-            height: "400px",
-            width: "100%",
-            background: "#96AAC5",
-            padding: "1rem",
-            "border-radius": "1rem",
-            "box-shadow": "0 4px 20px rgba(0,0,0,0.1)",
-          }}
-        >
-          <AgGridSolid
-            rowData={filtered()}
-            columnDefs={columnDefs}
-            domLayout="autoHeight"
-            suppressCellFocus={true}
-            defaultColDef={{
-              resizable: true,
-              sortable: true,
-            }}
-          />
+    <div class="max-w-6xl mx-auto">
+      {/* Header */}
+      <div class="bg-[#6C5E82] text-white p-6 rounded-2xl shadow mb-6 flex justify-between items-center">
+        <h2 class="text-xl font-semibold">Riwayat Pemesanan</h2>
+        <div class="flex items-center gap-3">
+          <select
+            class="bg-white text-[#3F5B8B] text-sm px-3 py-1 rounded shadow outline-none"
+            onInput={(e) => setFilterStatus(e.currentTarget.value)}
+          >
+            <option value="Semua">Semua</option>
+            <option value="Diproses">Diproses</option>
+            <option value="Dikirim">Dikirim</option>
+            <option value="Selesai">Selesai</option>
+          </select>
+          <button
+            class="bg-[#D0797F] hover:bg-red-500 text-white px-3 py-1 rounded text-sm flex items-center gap-1 shadow"
+            onClick={hapusSemua}
+          >
+            <Trash2 size={16} />
+            Hapus Semua
+          </button>
         </div>
       </div>
-    </>
+
+      {/* AG Grid Table */}
+      <div
+        class="ag-theme-alpine"
+        style={{
+          height: "auto",
+          width: "100%",
+          background: "#96AAC5",
+          padding: "1rem",
+          "border-radius": "1rem",
+          "box-shadow": "0 4px 20px rgba(0,0,0,0.1)",
+        }}
+      >
+        <AgGridSolid
+          rowData={filtered()}
+          columnDefs={columnDefs}
+          domLayout="autoHeight"
+          suppressCellFocus={true}
+          defaultColDef={{
+            resizable: true,
+            sortable: true,
+          }}
+        />
+      </div>
+    </div>
   );
 }
