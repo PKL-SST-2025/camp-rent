@@ -18,17 +18,16 @@ export default function Riwayat() {
   );
 
   const columnDefs = [
-    { headerName: "Nama Barang", field: "name", flex: 1 },
+    { headerName: "Nama Barang", field: "name", flex: 1, minWidth: 130 },
     {
       headerName: "Tanggal Sewa",
       field: "date",
       flex: 1,
+      minWidth: 180,
       cellRenderer: (params: any) => {
         try {
-          const startDateStr = params.value;
-          const durationText = params.data?.duration;
-          const start = new Date(startDateStr);
-          const duration = parseInt(durationText);
+          const start = new Date(params.value);
+          const duration = parseInt(params.data?.duration);
           if (isNaN(start.getTime()) || isNaN(duration)) return params.value;
 
           const end = new Date(start);
@@ -46,18 +45,16 @@ export default function Riwayat() {
         }
       },
     },
-    { headerName: "Durasi", field: "duration", flex: 1 },
-    { headerName: "Total", field: "price", flex: 1 },
+    { headerName: "Durasi", field: "duration", flex: 0.7, minWidth: 100 },
+    { headerName: "Total", field: "price", flex: 1, minWidth: 130 },
     {
       headerName: "Status",
       field: "status",
       flex: 1,
+      minWidth: 140,
       cellRenderer: (params: any) => {
         const status = params.value;
         const id = params.data?.id;
-
-        const nextStatus =
-          status === "Diproses" ? "Dikirim" : status === "Dikirim" ? "Selesai" : null;
 
         const color =
           status === "Diproses"
@@ -74,21 +71,6 @@ export default function Riwayat() {
         badge.textContent = status;
         container.appendChild(badge);
 
-        if (nextStatus) {
-          const btn = document.createElement("button");
-          btn.textContent = `Ubah ke "${nextStatus}"`;
-          btn.className =
-            "text-xs text-blue-700 underline hover:text-blue-900 transition";
-          btn.onclick = () => {
-            const updated = riwayat().map((item: any) =>
-              item.id === id ? { ...item, status: nextStatus } : item
-            );
-            setRiwayat(updated);
-            localStorage.setItem("riwayatSewa", JSON.stringify(updated));
-          };
-          container.appendChild(btn);
-        }
-
         return container;
       },
     },
@@ -96,6 +78,7 @@ export default function Riwayat() {
       headerName: "Aksi",
       field: "id",
       flex: 0.5,
+      minWidth: 90,
       cellRenderer: (params: any) => {
         const button = document.createElement("button");
         button.setAttribute("data-id", params.value);
@@ -133,11 +116,11 @@ export default function Riwayat() {
   };
 
   return (
-    <div class="max-w-6xl mx-auto">
+    <div class="max-w-6xl mx-auto px-4">
       {/* Header */}
-      <div class="bg-[#6C5E82] text-white p-6 rounded-2xl shadow mb-6 flex justify-between items-center">
+      <div class="bg-[#6C5E82] text-white p-6 rounded-2xl shadow mb-6 flex flex-col sm:flex-row justify-between gap-4 sm:items-center">
         <h2 class="text-xl font-semibold">Riwayat Pemesanan</h2>
-        <div class="flex items-center gap-3">
+        <div class="flex flex-wrap gap-3">
           <select
             class="bg-white text-[#3F5B8B] text-sm px-3 py-1 rounded shadow outline-none"
             onInput={(e) => setFilterStatus(e.currentTarget.value)}
@@ -158,27 +141,29 @@ export default function Riwayat() {
       </div>
 
       {/* AG Grid Table */}
-      <div
-        class="ag-theme-alpine"
-        style={{
-          height: "auto",
-          width: "100%",
-          background: "#96AAC5",
-          padding: "1rem",
-          "border-radius": "1rem",
-          "box-shadow": "0 4px 20px rgba(0,0,0,0.1)",
-        }}
-      >
-        <AgGridSolid
-          rowData={filtered()}
-          columnDefs={columnDefs}
-          domLayout="autoHeight"
-          suppressCellFocus={true}
-          defaultColDef={{
-            resizable: true,
-            sortable: true,
+      <div class="overflow-x-auto rounded-xl shadow">
+        <div
+          class="ag-theme-alpine min-w-[700px]"
+          style={{
+            height: "auto",
+            width: "100%",
+            background: "#96AAC5",
+            padding: "1rem",
+            "border-radius": "1rem",
+            "box-shadow": "0 4px 20px rgba(0,0,0,0.1)",
           }}
-        />
+        >
+          <AgGridSolid
+            rowData={filtered()}
+            columnDefs={columnDefs}
+            domLayout="autoHeight"
+            suppressCellFocus={true}
+            defaultColDef={{
+              resizable: true,
+              sortable: true,
+            }}
+          />
+        </div>
       </div>
     </div>
   );

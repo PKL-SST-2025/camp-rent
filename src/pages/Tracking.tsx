@@ -2,14 +2,38 @@ import { useParams, useNavigate } from "@solidjs/router";
 import { createSignal, onMount } from "solid-js";
 
 export default function Tracking() {
-  const params = useParams(); // Tangkap id dari /tracking/:id
+  const params = useParams();
   const navigate = useNavigate();
   const [data, setData] = createSignal<any>(null);
 
-  onMount(() => {
+  const fetchData = () => {
     const all = JSON.parse(localStorage.getItem("riwayatSewa") || "[]");
     const found = all.find((item: any) => String(item.id) === params.id);
     setData(found);
+  };
+
+  const handleStatusChange = () => {
+    const all = JSON.parse(localStorage.getItem("riwayatSewa") || "[]");
+    const updated = all.map((item: any) =>
+      String(item.id) === params.id
+        ? {
+            ...item,
+            status:
+              item.status === "Diproses"
+                ? "Dikirim"
+                : item.status === "Dikirim"
+                ? "Selesai"
+                : item.status,
+          }
+        : item
+    );
+    localStorage.setItem("riwayatSewa", JSON.stringify(updated));
+    const found = updated.find((item: any) => String(item.id) === params.id);
+    setData(found);
+  };
+
+  onMount(() => {
+    fetchData();
   });
 
   return (
@@ -86,6 +110,22 @@ export default function Tracking() {
             </div>
           </div>
 
+          {/* Tombol Ubah Status */}
+          {["Diproses", "Dikirim"].includes(data().status) && (
+            <div class="text-center mb-6">
+              <button
+                class="text-sm text-blue-700 underline hover:text-blue-900 transition"
+                onClick={handleStatusChange}
+              >
+                Ubah status ke{" "}
+                <span class="font-semibold">
+                  {data().status === "Diproses" ? "Dikirim" : "Selesai"}
+                </span>
+              </button>
+            </div>
+          )}
+
+          {/* Keterangan */}
           <div class="text-sm text-gray-600 border-t pt-4 mb-6">
             Barang akan dikirim sesuai estimasi dan status saat ini. Pastikan
             ada yang menerima di lokasi tujuan.
