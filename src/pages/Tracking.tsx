@@ -6,35 +6,35 @@ export default function Tracking() {
   const navigate = useNavigate();
   const [data, setData] = createSignal<any>(null);
 
-  const fetchData = () => {
+  // Ambil data berdasarkan ID
+  const loadData = () => {
     const all = JSON.parse(localStorage.getItem("riwayatSewa") || "[]");
     const found = all.find((item: any) => String(item.id) === params.id);
     setData(found);
   };
 
+  // Fungsi ubah status
   const handleStatusChange = () => {
+    if (!data()) return;
+    const current = data().status;
+    const next =
+      current === "Diproses"
+        ? "Dikirim"
+        : current === "Dikirim"
+        ? "Selesai"
+        : null;
+
+    if (!next) return;
+
     const all = JSON.parse(localStorage.getItem("riwayatSewa") || "[]");
     const updated = all.map((item: any) =>
-      String(item.id) === params.id
-        ? {
-            ...item,
-            status:
-              item.status === "Diproses"
-                ? "Dikirim"
-                : item.status === "Dikirim"
-                ? "Selesai"
-                : item.status,
-          }
-        : item
+      String(item.id) === params.id ? { ...item, status: next } : item
     );
     localStorage.setItem("riwayatSewa", JSON.stringify(updated));
-    const found = updated.find((item: any) => String(item.id) === params.id);
-    setData(found);
+    setData((prev: any) => ({ ...prev, status: next }));
   };
 
-  onMount(() => {
-    fetchData();
-  });
+  onMount(loadData);
 
   return (
     <>
@@ -52,11 +52,11 @@ export default function Tracking() {
             </div>
             <div>
               <p class="text-sm text-gray-500">Durasi</p>
-              <p class="font-semibold text-gray-700">{data().duration}</p>
+              <p class="font-semibold text-gray-700">{data().duration} hari</p>
             </div>
             <div>
               <p class="text-sm text-gray-500">Total Pembayaran</p>
-              <p class="font-semibold text-gray-700">{data().price}</p>
+              <p class="font-semibold text-gray-700">Rp.{Number(data().price).toLocaleString("id-ID")}</p>
             </div>
             <div>
               <p class="text-sm text-gray-500">Status Saat Ini</p>
@@ -70,9 +70,7 @@ export default function Tracking() {
               <div class="flex flex-col items-center">
                 <div
                   class={`w-4 h-4 rounded-full mb-2 ${
-                    data().status === "Diproses" ||
-                    data().status === "Dikirim" ||
-                    data().status === "Selesai"
+                    ["Diproses", "Dikirim", "Selesai"].includes(data().status)
                       ? "bg-yellow-400"
                       : "bg-gray-300"
                   }`}
@@ -85,7 +83,7 @@ export default function Tracking() {
               <div class="flex flex-col items-center">
                 <div
                   class={`w-4 h-4 rounded-full mb-2 ${
-                    data().status === "Dikirim" || data().status === "Selesai"
+                    ["Dikirim", "Selesai"].includes(data().status)
                       ? "bg-blue-500"
                       : "bg-gray-300"
                   }`}
@@ -114,22 +112,18 @@ export default function Tracking() {
           {["Diproses", "Dikirim"].includes(data().status) && (
             <div class="text-center mb-6">
               <button
-                class="text-sm text-blue-700 underline hover:text-blue-900 transition"
+                class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-md shadow transition"
                 onClick={handleStatusChange}
               >
-                Ubah status ke{" "}
-                <span class="font-semibold">
-                  {data().status === "Diproses" ? "Dikirim" : "Selesai"}
-                </span>
+                Ubah Status ke{" "}
+                {data().status === "Diproses"
+                  ? "Dikirim"
+                  : data().status === "Dikirim"
+                  ? "Selesai"
+                  : ""}
               </button>
             </div>
           )}
-
-          {/* Keterangan */}
-          <div class="text-sm text-gray-600 border-t pt-4 mb-6">
-            Barang akan dikirim sesuai estimasi dan status saat ini. Pastikan
-            ada yang menerima di lokasi tujuan.
-          </div>
 
           {/* Tombol Kembali */}
           <div class="text-center">

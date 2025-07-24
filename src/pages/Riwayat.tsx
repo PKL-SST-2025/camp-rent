@@ -48,32 +48,34 @@ export default function Riwayat() {
     { headerName: "Durasi", field: "duration", flex: 0.7, minWidth: 100 },
     { headerName: "Total", field: "price", flex: 1, minWidth: 130 },
     {
-      headerName: "Status",
-      field: "status",
-      flex: 1,
-      minWidth: 140,
-      cellRenderer: (params: any) => {
-        const status = params.value;
-        const id = params.data?.id;
+  headerName: "Status",
+  field: "status",
+  flex: 1,
+  minWidth: 140,
+  cellRenderer: (params: any) => {
+    const status = params.value;
+    const id = params.data?.id;
 
-        const color =
-          status === "Diproses"
-            ? "bg-yellow-400"
-            : status === "Dikirim"
-            ? "bg-blue-400"
-            : "bg-green-500";
+    const color =
+      status === "Diproses"
+        ? "bg-yellow-400"
+        : status === "Dikirim"
+        ? "bg-blue-400"
+        : "bg-green-500";
 
-        const container = document.createElement("div");
-        container.className = "flex flex-col items-start gap-1";
+    const container = document.createElement("div");
+    container.className = "flex flex-col items-start gap-1";
 
-        const badge = document.createElement("div");
-        badge.className = `px-3 py-1 rounded-full text-white text-xs font-medium ${color}`;
-        badge.textContent = status;
-        container.appendChild(badge);
+    const badge = document.createElement("a");
+    badge.href = `/tracking/${id}`;
+    badge.className = `px-3 py-1 rounded-full text-white text-xs font-medium ${color} hover:opacity-90 transition duration-150 cursor-pointer`;
+    badge.textContent = status;
+    container.appendChild(badge);
 
-        return container;
-      },
-    },
+    return container;
+  },
+},
+
     {
       headerName: "Aksi",
       field: "id",
