@@ -24,25 +24,13 @@ export default function Checkout() {
   const [items, setItems] = createSignal<any[]>([]);
   const navigate = useNavigate();
 
-  const ONGKIR = 20000;
-  const ADMIN_FEE = 5000;
-
   onMount(() => {
     const saved = localStorage.getItem("keranjang");
     if (saved) setItems(JSON.parse(saved));
   });
 
-  const subtotal = () =>
+  const total = () =>
     items().reduce((acc, item) => acc + item.price * item.quantity, 0);
-
-  const biayaTambahan = () => {
-    const method = formData().method;
-    if (method === "cod") return ONGKIR;
-    if (method === "transfer") return ADMIN_FEE;
-    return 0;
-  };
-
-  const totalAkhir = () => subtotal() + biayaTambahan();
 
   const handleInputChange = (field: FormField, value: string | boolean) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -59,23 +47,18 @@ export default function Checkout() {
       alert("Harap setujui syarat dan ketentuan.");
       return;
     }
-
     const checkoutData = {
-      name: formData().name,
-      email: formData().email,
-      phone: formData().phone,
-      address: formData().address,
-      method: formData().method,
-      items: items().map(item => ({
-        name: item.name,
-        days: item.quantity,
-        price: item.price,
-        total: item.price * item.quantity,
-      })),
-      subtotal: subtotal(),
-      tambahan: biayaTambahan(),
-      total: totalAkhir(),
-    };
+  name: formData().name, // Tambahkan baris ini
+  items: items().map(item => ({
+    name: item.name,
+    days: item.quantity, // pastikan sesuai, karena kamu pakai "quantity" untuk hari
+    price: item.price,
+    total: item.price * item.quantity,
+  })),
+  subtotal: total(),
+  shipping: 10000,
+  total: total() + 10000,
+};
 
     localStorage.setItem("checkoutData", JSON.stringify(checkoutData));
     alert("✅ Checkout berhasil!");
@@ -151,20 +134,10 @@ export default function Checkout() {
           </label>
         </div>
 
-        <div class="mt-4 space-y-1">
-          <p>Subtotal: Rp.{subtotal().toLocaleString("id-ID")}</p>
-          {formData().method === "cod" && (
-            <p>Ongkir (COD): Rp.{ONGKIR.toLocaleString("id-ID")}</p>
-          )}
-          {formData().method === "transfer" && (
-            <p>Biaya Admin (Transfer): Rp.{ADMIN_FEE.toLocaleString("id-ID")}</p>
-          )}
-          <p class="font-semibold text-base mt-2">
-            Total: Rp.{totalAkhir().toLocaleString("id-ID")}
-          </p>
-        </div>
-
-        <div class="flex justify-end">
+        <div class="flex justify-between items-center mt-4">
+          <span class="font-semibold text-base">
+            Total: Rp.{total().toLocaleString("id-ID")}
+          </span>
           <button
             type="submit"
             class="bg-[#3F5B8B] text-white px-6 py-2 rounded hover:bg-[#334670] transition shadow-md hover:scale-[1.03]"
