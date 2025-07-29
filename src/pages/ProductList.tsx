@@ -6,16 +6,16 @@ function ProdukList() {
   return (
     <div>
       <h1>Produk</h1>
-      <img src="/images/tenda.png" alt="Tenda" />
-      <img src="/images/kompor.png" alt="Kompor" />
-      <img src="/images/lampu.png" alt="Lampu" />
-      <img src="/images/carrier.png" alt="Carrier" />
-      <img src="/images/sleepbag.png" alt="Sleeping Bag" />
-      <img src="/images/headlamp.png" alt="Headlamp" />
-      <img src="/images/flysheet.png" alt="Flysheet" />
-      <img src="/images/gas.png" alt="Gas" />
-      <img src="/images/cookset.png" alt="Cookset" />
-      <img src="/images/matras.png" alt="Matras" />
+      <img src="/tenda.png" alt="Tenda" />
+      <img src="/kompor.png" alt="Kompor" />
+      <img src="/lampu.png" alt="Lampu" />
+      <img src="/carrier.png" alt="Carrier" />
+      <img src="/sleepbag.png" alt="Sleeping Bag" />
+      <img src="/headlamp.png" alt="Headlamp" />
+      <img src="/flysheet.png" alt="Flysheet" />
+      <img src="/gas.png" alt="Gas" />
+      <img src="/cookset.png" alt="Cookset" />
+      <img src="/matras.png" alt="Matras" />
     </div>
   );
 }
@@ -35,16 +35,16 @@ type Product = {
 };
 
 const defaultProducts: Product[] = [
-  { id: 1, name: "Tenda Dome", price: 50000, stock: 4, category: "tenda", img: "/images/tenda.png", badge: "Paling Laris", badgeColor: "bg-yellow-300" },
-  { id: 2, name: "Kompor Lipat", price: 10000, stock: 10, category: "peralatan", img: "/images/kompor.png" },
-  { id: 3, name: "Lampu Camping", price: 10000, stock: 10, category: "penerangan", img: "/images/lampu.png", badge: "Promo", badgeColor: "bg-green-300" },
-  { id: 4, name: "Carrier 60L", price: 40000, stock: 5, category: "tas", img: "/images/carrier.png" },
-  { id: 5, name: "Sleeping Bag", price: 25000, stock: 6, category: "tidur", img: "/images/sleepbag.png" },
-  { id: 6, name: "Headlamp LED", price: 20000, stock: 8, category: "penerangan", img: "/images/headlamp.png" },
-  { id: 7, name: "Flysheet", price: 15000, stock: 12, category: "tenda", img: "/images/flysheet.png" },
-  { id: 8, name: "Gas Kaleng", price: 8000, stock: 20, category: "peralatan", img: "/images/gas.png" },
-  { id: 9, name: "Cooking Set", price: 30000, stock: 7, category: "peralatan", img: "/images/cookset.png" },
-  { id: 10, name: "Matras", price: 10000, stock: 10, category: "tidur", img: "/images/matras.png" },
+  { id: 1, name: "Tenda Dome", price: 50000, stock: 4, category: "tenda", img: "/tenda.png", badge: "Paling Laris", badgeColor: "bg-yellow-300" },
+  { id: 2, name: "Kompor Lipat", price: 10000, stock: 10, category: "peralatan", img: "/kompor.png" },
+  { id: 3, name: "Lampu Camping", price: 10000, stock: 10, category: "penerangan", img: "/lampu.png", badge: "Promo", badgeColor: "bg-green-300" },
+  { id: 4, name: "Carrier 60L", price: 40000, stock: 5, category: "tas", img: "/carrier.png" },
+  { id: 5, name: "Sleeping Bag", price: 25000, stock: 6, category: "tidur", img: "/sleepbag.png" },
+  { id: 6, name: "Headlamp LED", price: 20000, stock: 8, category: "penerangan", img: "/headlamp.png" },
+  { id: 7, name: "Flysheet", price: 15000, stock: 12, category: "tenda", img: "/flysheet.png" },
+  { id: 8, name: "Gas Kaleng", price: 8000, stock: 20, category: "peralatan", img: "/gas.png" },
+  { id: 9, name: "Cooking Set", price: 30000, stock: 7, category: "peralatan", img: "/cookset.png" },
+  { id: 10, name: "Matras", price: 10000, stock: 10, category: "tidur", img: "/matras.png" },
 ];
 
 
