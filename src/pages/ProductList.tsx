@@ -65,14 +65,19 @@ export default function ProductList() {
   
 
   onMount(() => {
-    const local = localStorage.getItem("produkList");
-    if (!local) {
-      localStorage.setItem("produkList", JSON.stringify(defaultProducts));
-      setProducts(defaultProducts);
-    } else {
-      setProducts(JSON.parse(local));
-    }
-  });
+  const local = localStorage.getItem("produkList");
+
+  // Cek apakah datanya valid (mengandung img yang benar), kalau tidak reset
+  const parsed = local ? JSON.parse(local) : null;
+  const isValid = parsed && Array.isArray(parsed) && parsed.every(p => typeof p.img === "string" && p.img.startsWith("/"));
+
+  if (!isValid) {
+    localStorage.setItem("produkList", JSON.stringify(defaultProducts));
+    setProducts(defaultProducts);
+  } else {
+    setProducts(parsed);
+  }
+});
 
   const filteredProducts = () =>
     products().filter((product) => {
