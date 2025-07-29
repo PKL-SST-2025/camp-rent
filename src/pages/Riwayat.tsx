@@ -1,7 +1,6 @@
 import { createSignal, createMemo, onMount, onCleanup } from "solid-js";
 import AgGridSolid from "ag-grid-solid";
 import { Trash2 } from "lucide-solid";
-import { A } from "@solidjs/router";
 import "ag-grid-community/styles/ag-grid.css";
 import "ag-grid-community/styles/ag-theme-alpine.css";
 
@@ -49,34 +48,34 @@ export default function Riwayat() {
     { headerName: "Durasi", field: "duration", flex: 0.7, minWidth: 100 },
     { headerName: "Total", field: "price", flex: 1, minWidth: 130 },
     {
-      headerName: "Status",
-      field: "status",
-      flex: 1,
-      minWidth: 140,
-      cellRenderer: (params: any) => {
-        const status = params.value;
-        const id = params.data?.id;
+  headerName: "Status",
+  field: "status",
+  flex: 1,
+  minWidth: 140,
+  cellRenderer: (params: any) => {
+    const status = params.value;
+    const id = params.data?.id;
 
-        const color =
-          status === "Diproses"
-            ? "bg-yellow-400"
-            : status === "Dikirim"
-            ? "bg-blue-400"
-            : "bg-green-500";
+    const color =
+      status === "Diproses"
+        ? "bg-yellow-400"
+        : status === "Dikirim"
+        ? "bg-blue-400"
+        : "bg-green-500";
 
-        const container = document.createElement("div");
-        container.className = "flex flex-col items-start gap-1";
+    const container = document.createElement("div");
+    container.className = "flex flex-col items-start gap-1";
 
-        const wrapper = document.createElement("div");
-        wrapper.innerHTML = `
-          <a href="/tracking/${id}" class="px-3 py-1 rounded-full text-white text-xs font-medium ${color} hover:opacity-90 transition duration-150 cursor-pointer">
-            ${status}
-          </a>
-        `;
-        container.appendChild(wrapper.firstChild as HTMLElement);
-        return container;
-      },
-    },
+    const badge = document.createElement("a");
+    badge.href = `/tracking/${id}`;
+    badge.className = `px-3 py-1 rounded-full text-white text-xs font-medium ${color} hover:opacity-90 transition duration-150 cursor-pointer`;
+    badge.textContent = status;
+    container.appendChild(badge);
+
+    return container;
+  },
+},
+
     {
       headerName: "Aksi",
       field: "id",

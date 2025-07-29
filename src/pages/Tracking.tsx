@@ -12,24 +12,6 @@ export default function Tracking() {
     setData(found);
   });
 
-  const formatTanggal = (start: string, durasi: number) => {
-    try {
-      const startDate = new Date(start);
-      const endDate = new Date(startDate);
-      endDate.setDate(startDate.getDate() + durasi);
-
-      const formatter = new Intl.DateTimeFormat("id-ID", {
-        day: "2-digit",
-        month: "long",
-        year: "numeric",
-      });
-
-      return `${formatter.format(startDate)} - ${formatter.format(endDate)}`;
-    } catch {
-      return start;
-    }
-  };
-
   const updateStatus = () => {
     const current = data();
     if (!current) return;
@@ -63,13 +45,11 @@ export default function Tracking() {
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
             <div>
               <p class="text-sm text-gray-500">Tanggal Sewa</p>
-              <p class="font-semibold text-gray-700">
-                {formatTanggal(data().date, Number(data().duration))}
-              </p>
+              <p class="font-semibold text-gray-700">{data().date}</p>
             </div>
             <div>
               <p class="text-sm text-gray-500">Durasi</p>
-              <p class="font-semibold text-gray-700">{data().duration} Hari</p>
+              <p class="font-semibold text-gray-700">{data().duration}</p>
             </div>
             <div>
               <p class="text-sm text-gray-500">Total Pembayaran</p>
@@ -125,7 +105,7 @@ export default function Tracking() {
             </div>
           </div>
 
-          {/* Tombol Ubah Status */}
+          {/* Tombol Ubah Status (kalau belum selesai) */}
           {["Diproses", "Dikirim"].includes(data().status) && (
             <div class="text-center mb-6">
               <button
