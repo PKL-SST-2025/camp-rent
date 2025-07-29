@@ -6,35 +6,32 @@ export default function Tracking() {
   const navigate = useNavigate();
   const [data, setData] = createSignal<any>(null);
 
-  // Ambil data berdasarkan ID
-  const loadData = () => {
+  onMount(() => {
     const all = JSON.parse(localStorage.getItem("riwayatSewa") || "[]");
     const found = all.find((item: any) => String(item.id) === params.id);
     setData(found);
-  };
+  });
 
-  // Fungsi ubah status
-  const handleStatusChange = () => {
-    if (!data()) return;
-    const current = data().status;
+  const updateStatus = () => {
+    const current = data();
+    if (!current) return;
+
     const next =
-      current === "Diproses"
+      current.status === "Diproses"
         ? "Dikirim"
-        : current === "Dikirim"
+        : current.status === "Dikirim"
         ? "Selesai"
         : null;
 
-    if (!next) return;
-
-    const all = JSON.parse(localStorage.getItem("riwayatSewa") || "[]");
-    const updated = all.map((item: any) =>
-      String(item.id) === params.id ? { ...item, status: next } : item
-    );
-    localStorage.setItem("riwayatSewa", JSON.stringify(updated));
-    setData((prev: any) => ({ ...prev, status: next }));
+    if (next) {
+      const all = JSON.parse(localStorage.getItem("riwayatSewa") || "[]");
+      const updated = all.map((item: any) =>
+        String(item.id) === params.id ? { ...item, status: next } : item
+      );
+      localStorage.setItem("riwayatSewa", JSON.stringify(updated));
+      setData({ ...current, status: next });
+    }
   };
-
-  onMount(loadData);
 
   return (
     <>
@@ -52,11 +49,11 @@ export default function Tracking() {
             </div>
             <div>
               <p class="text-sm text-gray-500">Durasi</p>
-              <p class="font-semibold text-gray-700">{data().duration} hari</p>
+              <p class="font-semibold text-gray-700">{data().duration}</p>
             </div>
             <div>
               <p class="text-sm text-gray-500">Total Pembayaran</p>
-              <p class="font-semibold text-gray-700">Rp.{Number(data().price).toLocaleString("id-ID")}</p>
+              <p class="font-semibold text-gray-700">{data().price}</p>
             </div>
             <div>
               <p class="text-sm text-gray-500">Status Saat Ini</p>
@@ -108,19 +105,15 @@ export default function Tracking() {
             </div>
           </div>
 
-          {/* Tombol Ubah Status */}
+          {/* Tombol Ubah Status (kalau belum selesai) */}
           {["Diproses", "Dikirim"].includes(data().status) && (
             <div class="text-center mb-6">
               <button
-                class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-md shadow transition"
-                onClick={handleStatusChange}
+                onClick={updateStatus}
+                class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition"
               >
-                Ubah Status ke{" "}
-                {data().status === "Diproses"
-                  ? "Dikirim"
-                  : data().status === "Dikirim"
-                  ? "Selesai"
-                  : ""}
+                Ubah status ke{" "}
+                {data().status === "Diproses" ? "Dikirim" : "Selesai"}
               </button>
             </div>
           )}
