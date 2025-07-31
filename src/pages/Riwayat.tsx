@@ -48,34 +48,33 @@ export default function Riwayat() {
     { headerName: "Durasi", field: "duration", flex: 0.7, minWidth: 100 },
     { headerName: "Total", field: "price", flex: 1, minWidth: 130 },
     {
-  headerName: "Status",
-  field: "status",
-  flex: 1,
-  minWidth: 140,
-  cellRenderer: (params: any) => {
-    const status = params.value;
-    const id = params.data?.id;
+      headerName: "Status",
+      field: "status",
+      flex: 1,
+      minWidth: 140,
+      cellRenderer: (params: any) => {
+        const status = params.value;
+        const id = params.data?.id;
 
-    const color =
-      status === "Diproses"
-        ? "bg-yellow-400"
-        : status === "Dikirim"
-        ? "bg-blue-400"
-        : "bg-green-500";
+        const color =
+          status === "Diproses"
+            ? "bg-yellow-400"
+            : status === "Dikirim"
+            ? "bg-blue-400"
+            : "bg-green-500";
 
-    const container = document.createElement("div");
-    container.className = "flex flex-col items-start gap-1";
+        const container = document.createElement("div");
+        container.className = "flex flex-col items-start gap-1";
 
-    const badge = document.createElement("a");
-    badge.href = `/tracking/${id}`;
-    badge.className = `px-3 py-1 rounded-full text-white text-xs font-medium ${color} hover:opacity-90 transition duration-150 cursor-pointer`;
-    badge.textContent = status;
-    container.appendChild(badge);
+        const badge = document.createElement("a");
+        badge.href = `/tracking/${id}`;
+        badge.className = `px-3 py-1 rounded-full text-white text-xs font-medium ${color} hover:opacity-90 transition duration-150 cursor-pointer`;
+        badge.textContent = status;
+        container.appendChild(badge);
 
-    return container;
-  },
-},
-
+        return container;
+      },
+    },
     {
       headerName: "Aksi",
       field: "id",
@@ -86,7 +85,7 @@ export default function Riwayat() {
         button.setAttribute("data-id", params.value);
         button.className =
           "text-[#D0797F] hover:text-red-600 text-lg font-bold cursor-pointer";
-        button.textContent = "🗑️";
+        button.innerHTML = `<svg xmlns='http://www.w3.org/2000/svg' class='h-5 w-5' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M6 18L18 6M6 6l12 12'/></svg>`;
         return button;
       },
     },
@@ -94,7 +93,7 @@ export default function Riwayat() {
 
   const handleDeleteClick = (e: MouseEvent) => {
     const target = e.target as HTMLElement;
-    const id = target.getAttribute("data-id");
+    const id = target.closest("button")?.getAttribute("data-id");
     if (id) {
       const updated = riwayat().filter((item: any) => item.id !== Number(id));
       setRiwayat(updated);
@@ -109,13 +108,6 @@ export default function Riwayat() {
   onCleanup(() => {
     document.removeEventListener("click", handleDeleteClick);
   });
-
-  const hapusSemua = () => {
-    if (confirm("Yakin hapus semua riwayat?")) {
-      setRiwayat([]);
-      localStorage.removeItem("riwayatSewa");
-    }
-  };
 
   return (
     <div class="max-w-6xl mx-auto px-4">
@@ -132,13 +124,6 @@ export default function Riwayat() {
             <option value="Dikirim">Dikirim</option>
             <option value="Selesai">Selesai</option>
           </select>
-          <button
-            class="bg-[#D0797F] hover:bg-red-500 text-white px-3 py-1 rounded text-sm flex items-center gap-1 shadow"
-            onClick={hapusSemua}
-          >
-            <Trash2 size={16} />
-            Hapus Semua
-          </button>
         </div>
       </div>
 

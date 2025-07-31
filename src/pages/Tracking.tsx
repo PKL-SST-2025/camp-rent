@@ -6,30 +6,36 @@ export default function Tracking() {
   const navigate = useNavigate();
   const [data, setData] = createSignal<any>(null);
 
+  // Ambil data dari localStorage saat mount
   onMount(() => {
     const all = JSON.parse(localStorage.getItem("riwayatSewa") || "[]");
     const found = all.find((item: any) => String(item.id) === params.id);
     setData(found);
   });
 
+  // Fungsi update status
   const updateStatus = () => {
     const current = data();
     if (!current) return;
 
-    const next =
+    const nextStatus =
       current.status === "Diproses"
         ? "Dikirim"
         : current.status === "Dikirim"
         ? "Selesai"
         : null;
 
-    if (next) {
+    if (nextStatus) {
       const all = JSON.parse(localStorage.getItem("riwayatSewa") || "[]");
       const updated = all.map((item: any) =>
-        String(item.id) === params.id ? { ...item, status: next } : item
+        String(item.id) === params.id ? { ...item, status: nextStatus } : item
       );
+
       localStorage.setItem("riwayatSewa", JSON.stringify(updated));
-      setData({ ...current, status: next });
+      setData({ ...current, status: nextStatus });
+
+      // Optional: trigger sinkronisasi ke Riwayat (kalau pakai event listener)
+      window.dispatchEvent(new Event("storage"));
     }
   };
 
@@ -43,69 +49,16 @@ export default function Tracking() {
 
           {/* Info Detail */}
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            <div>
-              <p class="text-sm text-gray-500">Tanggal Sewa</p>
-              <p class="font-semibold text-gray-700">{data().date}</p>
-            </div>
-            <div>
-              <p class="text-sm text-gray-500">Durasi</p>
-              <p class="font-semibold text-gray-700">{data().duration}</p>
-            </div>
-            <div>
-              <p class="text-sm text-gray-500">Total Pembayaran</p>
-              <p class="font-semibold text-gray-700">{data().price}</p>
-            </div>
-            <div>
-              <p class="text-sm text-gray-500">Status Saat Ini</p>
-              <p class="font-semibold text-yellow-600">{data().status}</p>
-            </div>
+            <Detail label="Tanggal Sewa" value={data().date} />
+            <Detail label="Durasi" value={data().duration} />
+            <Detail label="Total Pembayaran" value={data().price} />
+            <Detail label="Status Saat Ini" value={data().status} color="text-yellow-600" />
           </div>
 
           {/* Progress Bar */}
-          <div class="mb-8">
-            <div class="flex items-center justify-between mb-4">
-              <div class="flex flex-col items-center">
-                <div
-                  class={`w-4 h-4 rounded-full mb-2 ${
-                    ["Diproses", "Dikirim", "Selesai"].includes(data().status)
-                      ? "bg-yellow-400"
-                      : "bg-gray-300"
-                  }`}
-                ></div>
-                <span class="text-xs text-center text-gray-600">
-                  Pesanan<br />Dikonfirmasi
-                </span>
-              </div>
-              <div class="flex-1 h-1 bg-gray-200 mx-2"></div>
-              <div class="flex flex-col items-center">
-                <div
-                  class={`w-4 h-4 rounded-full mb-2 ${
-                    ["Dikirim", "Selesai"].includes(data().status)
-                      ? "bg-blue-500"
-                      : "bg-gray-300"
-                  }`}
-                ></div>
-                <span class="text-xs text-center text-gray-600">
-                  Dalam<br />Perjalanan
-                </span>
-              </div>
-              <div class="flex-1 h-1 bg-gray-200 mx-2"></div>
-              <div class="flex flex-col items-center">
-                <div
-                  class={`w-4 h-4 rounded-full mb-2 ${
-                    data().status === "Selesai"
-                      ? "bg-green-500"
-                      : "bg-gray-300"
-                  }`}
-                ></div>
-                <span class="text-xs text-center text-gray-600">
-                  Tiba di<br />Lokasi
-                </span>
-              </div>
-            </div>
-          </div>
+          <ProgressBar status={data().status} />
 
-          {/* Tombol Ubah Status (kalau belum selesai) */}
+          {/* Tombol Ubah Status */}
           {["Diproses", "Dikirim"].includes(data().status) && (
             <div class="text-center mb-6">
               <button
@@ -121,8 +74,8 @@ export default function Tracking() {
           {/* Tombol Kembali */}
           <div class="text-center">
             <button
-              class="bg-[#3F5B8B] text-white px-5 py-2 rounded-md hover:bg-[#2e406b] transition"
               onClick={() => navigate("/riwayat")}
+              class="bg-[#3F5B8B] text-white px-5 py-2 rounded-md hover:bg-[#2e406b] transition"
             >
               ← Kembali ke Riwayat
             </button>
@@ -135,4 +88,62 @@ export default function Tracking() {
       )}
     </>
   );
+}
+
+// Komponen Detail Info
+function Detail(props: { label: string; value: string; color?: string }) {
+  return (
+    <div>
+      <p class="text-sm text-gray-500">{props.label}</p>
+      <p class={`font-semibold text-gray-700 ${props.color || ""}`}>{props.value}</p>
+    </div>
+  );
+}
+
+// Komponen ProgressBar
+function ProgressBar(props: { status: string }) {
+  const { status } = props;
+
+  return (
+    <div class="mb-8">
+      <div class="flex items-center justify-between mb-4">
+        <Step
+          active={["Diproses", "Dikirim", "Selesai"].includes(status)}
+          label="Pesanan\nDikonfirmasi"
+          color="bg-yellow-400"
+        />
+        <Line />
+        <Step
+          active={["Dikirim", "Selesai"].includes(status)}
+          label="Dalam\nPerjalanan"
+          color="bg-blue-500"
+        />
+        <Line />
+        <Step
+          active={status === "Selesai"}
+          label="Tiba di\nLokasi"
+          color="bg-green-500"
+        />
+      </div>
+    </div>
+  );
+}
+
+function Step(props: { active: boolean; label: string; color: string }) {
+  return (
+    <div class="flex flex-col items-center">
+      <div
+        class={`w-4 h-4 rounded-full mb-2 ${
+          props.active ? props.color : "bg-gray-300"
+        }`}
+      ></div>
+      <span class="text-xs text-center text-gray-600 whitespace-pre-line">
+        {props.label}
+      </span>
+    </div>
+  );
+}
+
+function Line() {
+  return <div class="flex-1 h-1 bg-gray-200 mx-2"></div>;
 }
