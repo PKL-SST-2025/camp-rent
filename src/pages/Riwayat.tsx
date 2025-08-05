@@ -1,137 +1,85 @@
-import { createSignal, createMemo } from "solid-js";
-import { useNavigate } from "@solidjs/router";
+import { createSignal, createMemo, onMount } from "solid-js";
+import { useParams, useNavigate } from "@solidjs/router";
 import AgGridSolid from "ag-grid-solid";
 import "ag-grid-community/styles/ag-grid.css";
 import "ag-grid-community/styles/ag-theme-alpine.css";
 
-export default function Riwayat() {
+export default function Tracking() {
+  const params = useParams();
   const navigate = useNavigate();
 
-  // Fungsi buat bikin ID unik
-  function generateId() {
-    return Date.now() + Math.floor(Math.random() * 1000);
-  }
+  const [riwayat, setRiwayat] = createSignal<any[]>([]);
+  const [data, setData] = createSignal<any>(null);
 
-  const saved = localStorage.getItem("riwayatSewa");
-  const initialData = saved ? JSON.parse(saved) : [];
+  // Ambil data dari localStorage
+  const loadData = () => {
+    const all = JSON.parse(localStorage.getItem("riwayatSewa") || "[]");
+    setRiwayat(all);
 
-  // Auto-fix data lama yang belum punya id
-  const fixedData = initialData.map((item: any) => ({
-    ...item,
-    id: item.id ?? generateId()
-  }));
-  localStorage.setItem("riwayatSewa", JSON.stringify(fixedData));
-
-  const [riwayat, setRiwayat] = createSignal(fixedData);
-  const [filterStatus, setFilterStatus] = createSignal("Semua");
-
-  const filtered = createMemo(() =>
-    filterStatus() === "Semua"
-      ? riwayat()
-      : riwayat().filter((item: any) => item.status === filterStatus())
-  );
-
-  const deleteData = (id: number) => {
-    const updated = riwayat().filter((item: any) => item.id !== id);
-    setRiwayat(updated);
-    localStorage.setItem("riwayatSewa", JSON.stringify(updated));
+    if (params.id) {
+      const found = all.find((item: any) => String(item.id) === String(params.id));
+      setData(found || null);
+    }
   };
 
-  const columnDefs = [
-    { headerName: "Nama Barang", field: "name", flex: 1, minWidth: 130 },
-    {
-      headerName: "Tanggal Sewa",
-      field: "date",
-      flex: 1,
-      minWidth: 180,
-      cellRenderer: (params: any) => {
-        try {
-          const start = new Date(params.value);
-          const duration = parseInt(params.data?.duration);
-          if (isNaN(start.getTime()) || isNaN(duration)) return params.value;
-          const end = new Date(start);
-          end.setDate(start.getDate() + duration);
-          const formatter = new Intl.DateTimeFormat("id-ID", {
-            day: "2-digit",
-            month: "long",
-            year: "numeric",
-          });
-          return `${formatter.format(start)} - ${formatter.format(end)}`;
-        } catch {
-          return params.value;
-        }
-      },
-    },
-    { headerName: "Durasi", field: "duration", flex: 0.7, minWidth: 100 },
-    { headerName: "Total", field: "price", flex: 1, minWidth: 130 },
-   {
-  headerName: "Status",
-  field: "status",
-  flex: 1,
-  minWidth: 140,
-  cellRenderer: (params: any) => {
-    const status = params.value;
-    const id = params.data?.id; // Pastikan data.id ada di rowData
-    const color =
-      status === "Diproses"
-        ? "bg-yellow-400"
-        : status === "Dikirim"
-        ? "bg-blue-400"
-        : "bg-green-500";
+  onMount(() => {
+    loadData();
+  });
 
-    const container = document.createElement("div");
-    const badge = document.createElement("a");
+  // Update status
+  const updateStatus = () => {
+    if (!data()) return;
+    const current = data();
+    const nextStatus =
+      current.status === "Diproses"
+        ? "Dikirim"
+        : current.status === "Dikirim"
+        ? "Selesai"
+        : null;
 
-    if (id !== undefined && id !== null) {
-      badge.href = `/tracking/${id}`;
-    } else {
-      badge.href = "#"; // fallback kalau id tidak ada
+    if (nextStatus) {
+      const updated = riwayat().map((item) =>
+        String(item.id) === String(params.id) ? { ...item, status: nextStatus } : item
+      );
+      localStorage.setItem("riwayatSewa", JSON.stringify(updated));
+      setRiwayat(updated);
+      setData({ ...current, status: nextStatus });
+      navigate("/tracking"); // balik ke list
     }
+  };
 
-    badge.className = `px-3 py-1 rounded-full text-white text-xs font-medium ${color} hover:opacity-90 transition duration-150 cursor-pointer`;
-    badge.textContent = status;
+  // Kalau tidak ada params.id → tampilkan list
+  if (!params.id) {
+    const columnDefs = [
+      { headerName: "Nama Barang", field: "name", flex: 1, minWidth: 130 },
+      { headerName: "Tanggal Sewa", field: "date", flex: 1, minWidth: 130 },
+      { headerName: "Durasi", field: "duration", flex: 1, minWidth: 100 },
+      { headerName: "Total", field: "price", flex: 1, minWidth: 100 },
+      {
+        headerName: "Status",
+        field: "status",
+        flex: 1,
+        minWidth: 140,
+        cellRenderer: (params: any) => {
+          const color =
+            params.value === "Diproses"
+              ? "bg-yellow-400"
+              : params.value === "Dikirim"
+              ? "bg-blue-400"
+              : "bg-green-500";
 
-    container.appendChild(badge);
-    return container;
-  },
-},
-
-    {
-      headerName: "Aksi",
-      field: "id",
-      flex: 0.5,
-      minWidth: 90,
-      cellRenderer: (params: any) => {
-        const button = document.createElement("button");
-        button.className =
-          "text-[#D0797F] hover:text-red-600 text-lg font-bold cursor-pointer";
-        button.innerHTML = `<svg xmlns='http://www.w3.org/2000/svg' class='h-5 w-5' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M6 18L18 6M6 6l12 12'/></svg>`;
-        button.onclick = () => deleteData(params.value);
-        return button;
+          const badge = document.createElement("a");
+          badge.href = `/tracking/${params.data.id}`;
+          badge.className = `px-3 py-1 rounded-full text-white text-xs font-medium ${color} cursor-pointer`;
+          badge.textContent = params.value;
+          return badge;
+        },
       },
-    },
-  ];
+    ];
 
-  return (
-    <div class="max-w-6xl mx-auto px-4">
-      {/* Header */}
-      <div class="bg-[#6C5E82] text-white p-6 rounded-2xl shadow mb-6 flex flex-col sm:flex-row justify-between gap-4 sm:items-center">
-        <h2 class="text-xl font-semibold">Riwayat Pemesanan</h2>
-        <div class="flex flex-wrap gap-3">
-          <select
-            class="bg-white text-[#3F5B8B] text-sm px-3 py-1 rounded shadow outline-none"
-            onInput={(e) => setFilterStatus(e.currentTarget.value)}
-          >
-            <option value="Semua">Semua</option>
-            <option value="Diproses">Diproses</option>
-            <option value="Dikirim">Dikirim</option>
-            <option value="Selesai">Selesai</option>
-          </select>
-        </div>
-      </div>
-
-      {/* AG Grid Table */}
-      <div class="overflow-x-auto rounded-xl shadow">
+    return (
+      <div class="max-w-6xl mx-auto p-4">
+        <h2 class="text-xl font-bold mb-4">Tracking Pesanan</h2>
         <div
           class="ag-theme-alpine"
           style={{
@@ -142,7 +90,7 @@ export default function Riwayat() {
           }}
         >
           <AgGridSolid
-            rowData={filtered()}
+            rowData={riwayat()}
             columnDefs={columnDefs}
             domLayout="autoHeight"
             suppressCellFocus={true}
@@ -155,6 +103,89 @@ export default function Riwayat() {
           />
         </div>
       </div>
+    );
+  }
+
+  // Kalau ada params.id → tampilkan detail tracking
+  return (
+    <div class="bg-white rounded-2xl shadow-lg p-8 max-w-3xl mx-auto mt-8">
+      {data() ? (
+        <>
+          <h2 class="text-2xl font-bold text-[#3F5B8B] mb-6 text-center">
+            {data().name}
+          </h2>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <Detail label="Tanggal Sewa" value={data().date} />
+            <Detail label="Durasi" value={data().duration} />
+            <Detail label="Total Pembayaran" value={data().price} />
+            <Detail label="Status Saat Ini" value={data().status} color="text-yellow-600" />
+          </div>
+
+          <ProgressBar status={data().status} />
+
+          {["Diproses", "Dikirim"].includes(data().status) && (
+            <div class="text-center mb-6">
+              <button
+                onClick={updateStatus}
+                class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition"
+              >
+                Ubah status ke {data().status === "Diproses" ? "Dikirim" : "Selesai"}
+              </button>
+            </div>
+          )}
+
+          <div class="text-center">
+            <button
+              onClick={() => navigate("/tracking")}
+              class="bg-[#3F5B8B] text-white px-5 py-2 rounded-md hover:bg-[#2e406b] transition"
+            >
+              ← Kembali ke Tracking List
+            </button>
+          </div>
+        </>
+      ) : (
+        <div class="text-center text-gray-600 text-sm mt-10">
+          Data tidak ditemukan.
+        </div>
+      )}
     </div>
   );
+}
+
+function Detail(props: { label: string; value: string; color?: string }) {
+  return (
+    <div>
+      <p class="text-sm text-gray-500">{props.label}</p>
+      <p class={`font-semibold text-gray-700 ${props.color || ""}`}>{props.value}</p>
+    </div>
+  );
+}
+
+function ProgressBar(props: { status: string }) {
+  const { status } = props;
+  return (
+    <div class="mb-8">
+      <div class="flex items-center justify-between mb-4">
+        <Step active={["Diproses", "Dikirim", "Selesai"].includes(status)} label="Pesanan Dikonfirmasi" color="bg-yellow-400" />
+        <Line />
+        <Step active={["Dikirim", "Selesai"].includes(status)} label="Dalam Perjalanan" color="bg-blue-500" />
+        <Line />
+        <Step active={status === "Selesai"} label="Tiba di Lokasi" color="bg-green-500" />
+      </div>
+    </div>
+  );
+}
+
+function Step(props: { active: boolean; label: string; color: string }) {
+  return (
+    <div class="flex flex-col items-center">
+      <div class={`w-4 h-4 rounded-full mb-2 ${props.active ? props.color : "bg-gray-300"}`}></div>
+      <span class="text-xs text-center text-gray-600 whitespace-pre-line">{props.label}</span>
+    </div>
+  );
+}
+
+function Line() {
+  return <div class="flex-1 h-1 bg-gray-200 mx-2"></div>;
 }
