@@ -7,153 +7,79 @@ import "ag-grid-community/styles/ag-theme-alpine.css";
 export default function Tracking() {
   const params = useParams();
   const navigate = useNavigate();
+
   const [riwayat, setRiwayat] = createSignal<any[]>([]);
-  const [filterStatus, setFilterStatus] = createSignal("Semua");
   const [data, setData] = createSignal<any>(null);
 
-  // Ambil data saat mount
-  onMount(() => {
+  // Ambil data dari localStorage
+  const loadData = () => {
     const all = JSON.parse(localStorage.getItem("riwayatSewa") || "[]");
     setRiwayat(all);
 
     if (params.id) {
-      const found = all.find((item: any) => String(item.id) === params.id);
+      const found = all.find((item: any) => String(item.id) === String(params.id));
       setData(found || null);
     }
+  };
+
+  onMount(() => {
+    loadData();
   });
 
-  // Filter list tracking
-  const filtered = createMemo(() =>
-    filterStatus() === "Semua"
-      ? riwayat()
-      : riwayat().filter((item: any) => item.status === filterStatus())
-  );
-
-  // Ubah status pesanan
+  // Update status
   const updateStatus = () => {
+    if (!data()) return;
     const current = data();
-    if (!current) return;
-    const next =
+    const nextStatus =
       current.status === "Diproses"
         ? "Dikirim"
         : current.status === "Dikirim"
         ? "Selesai"
         : null;
 
-    if (next) {
-      const all = riwayat().map((item) =>
-        String(item.id) === params.id ? { ...item, status: next } : item
+    if (nextStatus) {
+      const updated = riwayat().map((item) =>
+        String(item.id) === String(params.id) ? { ...item, status: nextStatus } : item
       );
-      localStorage.setItem("riwayatSewa", JSON.stringify(all));
-      setRiwayat(all);
-      setData({ ...current, status: next });
-
-      if (next === "Selesai") navigate("/riwayat");
+      localStorage.setItem("riwayatSewa", JSON.stringify(updated));
+      setRiwayat(updated);
+      setData({ ...current, status: nextStatus });
+      navigate("/tracking"); // balik ke list
     }
   };
 
-  // Kolom tabel list tracking
-  const columnDefs = [
-    { headerName: "Nama Barang", field: "name", flex: 1, minWidth: 130 },
-    {
-      headerName: "Tanggal Sewa",
-      field: "date",
-      flex: 1,
-      minWidth: 180,
-      cellRenderer: (params: any) => {
-        try {
-          const start = new Date(params.value);
-          const duration = parseInt(params.data?.duration);
-          if (isNaN(start.getTime()) || isNaN(duration)) return params.value;
-          const end = new Date(start);
-          end.setDate(start.getDate() + duration);
-          const formatter = new Intl.DateTimeFormat("id-ID", {
-            day: "2-digit",
-            month: "long",
-            year: "numeric",
-          });
-          return `${formatter.format(start)} - ${formatter.format(end)}`;
-        } catch {
-          return params.value;
-        }
-      },
-    },
-    { headerName: "Durasi", field: "duration", flex: 0.7, minWidth: 100 },
-    { headerName: "Total", field: "price", flex: 1, minWidth: 130 },
-    {
-      headerName: "Status",
-      field: "status",
-      flex: 1,
-      minWidth: 140,
-      cellRenderer: (params: any) => {
-        const status = params.value;
-        const id = params.data?.id;
-        const color =
-          status === "Diproses"
-            ? "bg-yellow-400"
-            : status === "Dikirim"
-            ? "bg-blue-400"
-            : "bg-green-500";
-        const badge = document.createElement("a");
-        badge.href = `/tracking/${id}`;
-        badge.className = `px-3 py-1 rounded-full text-white text-xs font-medium ${color} hover:opacity-90 transition duration-150 cursor-pointer`;
-        badge.textContent = status;
-        return badge;
-      },
-    },
-  ];
+  // Kalau tidak ada params.id → tampilkan list
+  if (!params.id) {
+    const columnDefs = [
+      { headerName: "Nama Barang", field: "name", flex: 1, minWidth: 130 },
+      { headerName: "Tanggal Sewa", field: "date", flex: 1, minWidth: 130 },
+      { headerName: "Durasi", field: "duration", flex: 1, minWidth: 100 },
+      { headerName: "Total", field: "price", flex: 1, minWidth: 100 },
+      {
+        headerName: "Status",
+        field: "status",
+        flex: 1,
+        minWidth: 140,
+        cellRenderer: (params: any) => {
+          const color =
+            params.value === "Diproses"
+              ? "bg-yellow-400"
+              : params.value === "Dikirim"
+              ? "bg-blue-400"
+              : "bg-green-500";
 
-  // Mode detail atau list
-  if (params.id && data()) {
+          const badge = document.createElement("a");
+          badge.href = `/tracking/${params.data.id}`;
+          badge.className = `px-3 py-1 rounded-full text-white text-xs font-medium ${color} cursor-pointer`;
+          badge.textContent = params.value;
+          return badge;
+        },
+      },
+    ];
+
     return (
-      <div class="bg-white rounded-2xl shadow-lg p-8 max-w-3xl mx-auto mt-8">
-        <h2 class="text-2xl font-bold text-[#3F5B8B] mb-6 text-center">
-          {data().name}
-        </h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-          <Detail label="Tanggal Sewa" value={data().date} />
-          <Detail label="Durasi" value={data().duration} />
-          <Detail label="Total Pembayaran" value={data().price} />
-          <Detail label="Status Saat Ini" value={data().status} color="text-yellow-600" />
-        </div>
-        <ProgressBar status={data().status} />
-        {["Diproses", "Dikirim"].includes(data().status) && (
-          <div class="text-center mb-6">
-            <button
-              onClick={updateStatus}
-              class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition"
-            >
-              Ubah status ke {data().status === "Diproses" ? "Dikirim" : "Selesai"}
-            </button>
-          </div>
-        )}
-        <div class="text-center">
-          <button
-            onClick={() => navigate("/tracking")}
-            class="bg-[#3F5B8B] text-white px-5 py-2 rounded-md hover:bg-[#2e406b] transition"
-          >
-            ← Kembali ke Tracking
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div class="max-w-6xl mx-auto px-4">
-      <div class="bg-[#6C5E82] text-white p-6 rounded-2xl shadow mb-6 flex flex-col sm:flex-row justify-between gap-4 sm:items-center">
-        <h2 class="text-xl font-semibold">Tracking Pemesanan</h2>
-        <select
-          class="bg-white text-[#3F5B8B] text-sm px-3 py-1 rounded shadow outline-none"
-          onInput={(e) => setFilterStatus(e.currentTarget.value)}
-        >
-          <option value="Semua">Semua</option>
-          <option value="Diproses">Diproses</option>
-          <option value="Dikirim">Dikirim</option>
-          <option value="Selesai">Selesai</option>
-        </select>
-      </div>
-      <div class="overflow-x-auto rounded-xl shadow">
+      <div class="max-w-6xl mx-auto p-4">
+        <h2 class="text-xl font-bold mb-4">Tracking Pesanan</h2>
         <div
           class="ag-theme-alpine"
           style={{
@@ -164,7 +90,7 @@ export default function Tracking() {
           }}
         >
           <AgGridSolid
-            rowData={filtered()}
+            rowData={riwayat()}
             columnDefs={columnDefs}
             domLayout="autoHeight"
             suppressCellFocus={true}
@@ -177,6 +103,52 @@ export default function Tracking() {
           />
         </div>
       </div>
+    );
+  }
+
+  // Kalau ada params.id → tampilkan detail tracking
+  return (
+    <div class="bg-white rounded-2xl shadow-lg p-8 max-w-3xl mx-auto mt-8">
+      {data() ? (
+        <>
+          <h2 class="text-2xl font-bold text-[#3F5B8B] mb-6 text-center">
+            {data().name}
+          </h2>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <Detail label="Tanggal Sewa" value={data().date} />
+            <Detail label="Durasi" value={data().duration} />
+            <Detail label="Total Pembayaran" value={data().price} />
+            <Detail label="Status Saat Ini" value={data().status} color="text-yellow-600" />
+          </div>
+
+          <ProgressBar status={data().status} />
+
+          {["Diproses", "Dikirim"].includes(data().status) && (
+            <div class="text-center mb-6">
+              <button
+                onClick={updateStatus}
+                class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition"
+              >
+                Ubah status ke {data().status === "Diproses" ? "Dikirim" : "Selesai"}
+              </button>
+            </div>
+          )}
+
+          <div class="text-center">
+            <button
+              onClick={() => navigate("/tracking")}
+              class="bg-[#3F5B8B] text-white px-5 py-2 rounded-md hover:bg-[#2e406b] transition"
+            >
+              ← Kembali ke Tracking List
+            </button>
+          </div>
+        </>
+      ) : (
+        <div class="text-center text-gray-600 text-sm mt-10">
+          Data tidak ditemukan.
+        </div>
+      )}
     </div>
   );
 }
