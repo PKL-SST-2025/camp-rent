@@ -27,7 +27,6 @@ export default function Register() {
     }
 
     const users: User[] = JSON.parse(localStorage.getItem("users") || "[]");
-
     const isUsed = users.some((u) => u.email === email());
     if (isUsed) {
       alert("Email sudah terdaftar!");
@@ -49,16 +48,20 @@ export default function Register() {
   };
 
   return (
-    <main class="min-h-screen flex items-center justify-center bg-gradient-to-b from-[#96AAC5] to-[#FCEBEC] font-sans px-4">
-      <div class="bg-white/40 backdrop-blur-md p-8 rounded-xl w-full max-w-sm shadow-md border border-white/20">
-        <h1 class="text-2xl font-bold text-center text-[#3F5B8B] mb-1">Daftar ke CampRent</h1>
-        <p class="text-xs text-center text-[#6C5E82] mb-6">
+    <main class="min-h-screen flex items-center justify-center bg-gradient-to-b from-[#96AAC5] to-[#FCEBEC] font-sans px-4 fade-in">
+      <div class="bg-white/40 backdrop-blur-md p-8 rounded-xl w-full max-w-sm shadow-md border border-white/20 zoom-in">
+        <h1 class="text-2xl font-bold text-center text-[#3F5B8B] mb-1 fade-up delay-1">
+          Daftar ke CampRent
+        </h1>
+        <p class="text-xs text-center text-[#6C5E82] mb-6 fade-up delay-2">
           Sewa perlengkapan camping dengan cepat & mudah.
         </p>
 
         {/* Nama */}
-        <label class="block text-xs text-[#2E365A] mb-1 ml-1">Nama Lengkap</label>
-        <div class="flex items-center bg-white rounded px-3 mb-4 shadow-sm">
+        <label class="block text-xs text-[#2E365A] mb-1 ml-1 slide-in-left delay-1">
+          Nama Lengkap
+        </label>
+        <div class="flex items-center bg-white rounded px-3 mb-4 shadow-sm slide-in-left delay-1 hover-shadow">
           <User class="text-gray-400 h-4 w-4 mr-2" />
           <input
             type="text"
@@ -69,8 +72,10 @@ export default function Register() {
         </div>
 
         {/* Email */}
-        <label class="block text-xs text-[#2E365A] mb-1 ml-1">Email</label>
-        <div class="flex items-center bg-white rounded px-3 mb-4 shadow-sm">
+        <label class="block text-xs text-[#2E365A] mb-1 ml-1 slide-in-left delay-2">
+          Email
+        </label>
+        <div class="flex items-center bg-white rounded px-3 mb-4 shadow-sm slide-in-left delay-2 hover-shadow">
           <Mail class="text-gray-400 h-4 w-4 mr-2" />
           <input
             type="email"
@@ -81,8 +86,10 @@ export default function Register() {
         </div>
 
         {/* Password */}
-        <label class="block text-xs text-[#2E365A] mb-1 ml-1">Password</label>
-        <div class="flex items-center bg-white rounded px-3 mb-4 shadow-sm">
+        <label class="block text-xs text-[#2E365A] mb-1 ml-1 slide-in-left delay-3">
+          Password
+        </label>
+        <div class="flex items-center bg-white rounded px-3 mb-4 shadow-sm slide-in-left delay-3 hover-shadow">
           <Lock class="text-gray-400 h-4 w-4 mr-2" />
           <input
             type="password"
@@ -93,8 +100,10 @@ export default function Register() {
         </div>
 
         {/* Konfirmasi Password */}
-        <label class="block text-xs text-[#2E365A] mb-1 ml-1">Konfirmasi Password</label>
-        <div class="flex items-center bg-white rounded px-3 mb-6 shadow-sm">
+        <label class="block text-xs text-[#2E365A] mb-1 ml-1 slide-in-left delay-4">
+          Konfirmasi Password
+        </label>
+        <div class="flex items-center bg-white rounded px-3 mb-6 shadow-sm slide-in-left delay-4 hover-shadow">
           <Lock class="text-gray-400 h-4 w-4 mr-2" />
           <input
             type="password"
@@ -107,15 +116,18 @@ export default function Register() {
         {/* Tombol Daftar */}
         <button
           onClick={handleRegister}
-          class="w-full bg-[#D0797F] text-white py-2 rounded-lg font-semibold hover:bg-[#A801A7] transition"
+          class="w-full bg-[#D0797F] text-white py-2 rounded-lg font-semibold hover:bg-[#A801A7] transition pulse hover-scale delay-5"
         >
           Daftar Sekarang
         </button>
 
         {/* Link ke login */}
-        <p class="text-xs text-center mt-4 text-[#7A7A8B]">
+        <p class="text-xs text-center mt-4 text-[#7A7A8B] fade-up delay-6">
           Sudah punya akun?{" "}
-          <a href="/login" class="text-[#6C5E82] hover:underline font-medium">
+          <a
+            href="/login"
+            class="text-[#6C5E82] hover:underline font-medium hover-scale"
+          >
             Masuk di sini
           </a>
         </p>
