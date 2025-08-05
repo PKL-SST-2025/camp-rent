@@ -6,10 +6,23 @@ import "ag-grid-community/styles/ag-theme-alpine.css";
 
 export default function Riwayat() {
   const navigate = useNavigate();
+
+  // Fungsi buat bikin ID unik
+  function generateId() {
+    return Date.now() + Math.floor(Math.random() * 1000);
+  }
+
   const saved = localStorage.getItem("riwayatSewa");
   const initialData = saved ? JSON.parse(saved) : [];
 
-  const [riwayat, setRiwayat] = createSignal(initialData);
+  // Auto-fix data lama yang belum punya id
+  const fixedData = initialData.map((item: any) => ({
+    ...item,
+    id: item.id ?? generateId()
+  }));
+  localStorage.setItem("riwayatSewa", JSON.stringify(fixedData));
+
+  const [riwayat, setRiwayat] = createSignal(fixedData);
   const [filterStatus, setFilterStatus] = createSignal("Semua");
 
   const filtered = createMemo(() =>
@@ -51,14 +64,14 @@ export default function Riwayat() {
     },
     { headerName: "Durasi", field: "duration", flex: 0.7, minWidth: 100 },
     { headerName: "Total", field: "price", flex: 1, minWidth: 130 },
-    {
+   {
   headerName: "Status",
   field: "status",
   flex: 1,
   minWidth: 140,
   cellRenderer: (params: any) => {
     const status = params.value;
-    const id = params.data?.id;
+    const id = params.data?.id; // Pastikan data.id ada di rowData
     const color =
       status === "Diproses"
         ? "bg-yellow-400"
@@ -68,9 +81,16 @@ export default function Riwayat() {
 
     const container = document.createElement("div");
     const badge = document.createElement("a");
-    badge.href = `/tracking/${id}`; // langsung ke detail tracking
+
+    if (id !== undefined && id !== null) {
+      badge.href = `/tracking/${id}`;
+    } else {
+      badge.href = "#"; // fallback kalau id tidak ada
+    }
+
     badge.className = `px-3 py-1 rounded-full text-white text-xs font-medium ${color} hover:opacity-90 transition duration-150 cursor-pointer`;
     badge.textContent = status;
+
     container.appendChild(badge);
     return container;
   },
