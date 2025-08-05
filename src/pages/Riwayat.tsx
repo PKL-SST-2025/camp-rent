@@ -1,10 +1,11 @@
-import { createSignal, createMemo, onMount, onCleanup } from "solid-js";
+import { createSignal, createMemo } from "solid-js";
+import { useNavigate } from "@solidjs/router";
 import AgGridSolid from "ag-grid-solid";
-import { Trash2 } from "lucide-solid";
 import "ag-grid-community/styles/ag-grid.css";
 import "ag-grid-community/styles/ag-theme-alpine.css";
 
 export default function Riwayat() {
+  const navigate = useNavigate();
   const saved = localStorage.getItem("riwayatSewa");
   const initialData = saved ? JSON.parse(saved) : [];
 
@@ -16,6 +17,12 @@ export default function Riwayat() {
       ? riwayat()
       : riwayat().filter((item: any) => item.status === filterStatus())
   );
+
+  const deleteData = (id: number) => {
+    const updated = riwayat().filter((item: any) => item.id !== id);
+    setRiwayat(updated);
+    localStorage.setItem("riwayatSewa", JSON.stringify(updated));
+  };
 
   const columnDefs = [
     { headerName: "Nama Barang", field: "name", flex: 1, minWidth: 130 },
@@ -29,16 +36,13 @@ export default function Riwayat() {
           const start = new Date(params.value);
           const duration = parseInt(params.data?.duration);
           if (isNaN(start.getTime()) || isNaN(duration)) return params.value;
-
           const end = new Date(start);
           end.setDate(start.getDate() + duration);
-
           const formatter = new Intl.DateTimeFormat("id-ID", {
             day: "2-digit",
             month: "long",
             year: "numeric",
           });
-
           return `${formatter.format(start)} - ${formatter.format(end)}`;
         } catch {
           return params.value;
@@ -48,33 +52,30 @@ export default function Riwayat() {
     { headerName: "Durasi", field: "duration", flex: 0.7, minWidth: 100 },
     { headerName: "Total", field: "price", flex: 1, minWidth: 130 },
     {
-      headerName: "Status",
-      field: "status",
-      flex: 1,
-      minWidth: 140,
-      cellRenderer: (params: any) => {
-        const status = params.value;
-        const id = params.data?.id;
+  headerName: "Status",
+  field: "status",
+  flex: 1,
+  minWidth: 140,
+  cellRenderer: (params: any) => {
+    const status = params.value;
+    const id = params.data?.id;
+    const color =
+      status === "Diproses"
+        ? "bg-yellow-400"
+        : status === "Dikirim"
+        ? "bg-blue-400"
+        : "bg-green-500";
 
-        const color =
-          status === "Diproses"
-            ? "bg-yellow-400"
-            : status === "Dikirim"
-            ? "bg-blue-400"
-            : "bg-green-500";
+    const container = document.createElement("div");
+    const badge = document.createElement("a");
+    badge.href = `/tracking/${id}`; // langsung ke detail tracking
+    badge.className = `px-3 py-1 rounded-full text-white text-xs font-medium ${color} hover:opacity-90 transition duration-150 cursor-pointer`;
+    badge.textContent = status;
+    container.appendChild(badge);
+    return container;
+  },
+},
 
-        const container = document.createElement("div");
-        container.className = "flex flex-col items-start gap-1";
-
-        const badge = document.createElement("a");
-        badge.href = `/tracking/${id}`;
-        badge.className = `px-3 py-1 rounded-full text-white text-xs font-medium ${color} hover:opacity-90 transition duration-150 cursor-pointer`;
-        badge.textContent = status;
-        container.appendChild(badge);
-
-        return container;
-      },
-    },
     {
       headerName: "Aksi",
       field: "id",
@@ -82,32 +83,14 @@ export default function Riwayat() {
       minWidth: 90,
       cellRenderer: (params: any) => {
         const button = document.createElement("button");
-        button.setAttribute("data-id", params.value);
         button.className =
           "text-[#D0797F] hover:text-red-600 text-lg font-bold cursor-pointer";
         button.innerHTML = `<svg xmlns='http://www.w3.org/2000/svg' class='h-5 w-5' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M6 18L18 6M6 6l12 12'/></svg>`;
+        button.onclick = () => deleteData(params.value);
         return button;
       },
     },
   ];
-
-  const handleDeleteClick = (e: MouseEvent) => {
-    const target = e.target as HTMLElement;
-    const id = target.closest("button")?.getAttribute("data-id");
-    if (id) {
-      const updated = riwayat().filter((item: any) => item.id !== Number(id));
-      setRiwayat(updated);
-      localStorage.setItem("riwayatSewa", JSON.stringify(updated));
-    }
-  };
-
-  onMount(() => {
-    document.addEventListener("click", handleDeleteClick);
-  });
-
-  onCleanup(() => {
-    document.removeEventListener("click", handleDeleteClick);
-  });
 
   return (
     <div class="max-w-6xl mx-auto px-4">
@@ -130,14 +113,12 @@ export default function Riwayat() {
       {/* AG Grid Table */}
       <div class="overflow-x-auto rounded-xl shadow">
         <div
-          class="ag-theme-alpine min-w-[700px]"
+          class="ag-theme-alpine"
           style={{
-            height: "auto",
             width: "100%",
             background: "#96AAC5",
             padding: "1rem",
             "border-radius": "1rem",
-            "box-shadow": "0 4px 20px rgba(0,0,0,0.1)",
           }}
         >
           <AgGridSolid
@@ -148,6 +129,8 @@ export default function Riwayat() {
             defaultColDef={{
               resizable: true,
               sortable: true,
+              flex: 1,
+              minWidth: 100,
             }}
           />
         </div>
