@@ -1,4 +1,5 @@
 import { createSignal } from "solid-js";
+import { useNavigate } from "@solidjs/router"; // ✅ Tambah import router
 
 interface OrderItem {
   name: string;
@@ -13,10 +14,12 @@ interface OrderData {
   subtotal: number;
   shipping: number;
   total: number;
-  paymentMethod?: "cod" | "transfer"; // ✅ Tambahkan tipe
+  paymentMethod?: "cod" | "transfer";
 }
 
 export default function CheckoutSummary() {
+  const navigate = useNavigate(); // ✅ Buat navigate function
+
   const data = localStorage.getItem("checkoutData");
   const parsed: OrderData = data
     ? JSON.parse(data)
@@ -24,13 +27,12 @@ export default function CheckoutSummary() {
 
   const [orderData] = createSignal<OrderData>(parsed);
 
-  // Hitung total dinamis tergantung metode bayar
   const getAdjustedTotal = () => {
     const baseTotal = orderData().total;
     if (orderData().paymentMethod === "transfer") {
       return baseTotal + 2500;
     }
-    return baseTotal; // COD tidak ada biaya tambahan
+    return baseTotal;
   };
 
   const getPaymentNote = () => {
@@ -46,7 +48,6 @@ export default function CheckoutSummary() {
 
   const handleConfirmOrder = () => {
     const checkout = orderData();
-
     const existing = JSON.parse(localStorage.getItem("riwayatSewa") || "[]");
 
     const now = new Date();
@@ -58,6 +59,7 @@ export default function CheckoutSummary() {
     const today = formatter.format(now);
 
     const newEntries = checkout.items.map(item => ({
+      id: Date.now() + Math.floor(Math.random() * 1000), // ✅ Tambah ID unik
       name: item.name,
       date: today,
       duration: `${item.days} Hari`,
@@ -69,7 +71,12 @@ export default function CheckoutSummary() {
     const updated = [...existing, ...newEntries];
     localStorage.setItem("riwayatSewa", JSON.stringify(updated));
 
+    // ✅ Hapus keranjang & checkoutData
+    localStorage.removeItem("keranjang");
+    localStorage.removeItem("checkoutData");
+
     alert("✅ Pesanan berhasil dikonfirmasi!");
+    navigate("/riwayat"); // ✅ Redirect ke Riwayat
   };
 
   return (
