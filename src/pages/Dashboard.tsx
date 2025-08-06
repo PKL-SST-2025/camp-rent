@@ -33,8 +33,12 @@ export default function DashboardInventaris() {
   // Fungsi untuk load dan fix data
   const loadRiwayatData = () => {
     try {
+      console.log("Loading riwayat data from localStorage...");
       const saved = localStorage.getItem("riwayatSewa");
+      console.log("Raw localStorage data:", saved);
+      
       const initialData = saved ? JSON.parse(saved) : [];
+      console.log("Parsed initial data:", initialData);
       
       // Auto-fix data lama yang belum punya id
       const fixedData = initialData.map((item: any) => ({
@@ -42,6 +46,7 @@ export default function DashboardInventaris() {
         id: item.id ?? generateId()
       }));
       
+      console.log("Fixed data with IDs:", fixedData);
       localStorage.setItem("riwayatSewa", JSON.stringify(fixedData));
       setRiwayat(fixedData);
       return fixedData;
@@ -52,7 +57,9 @@ export default function DashboardInventaris() {
   };
 
   onMount(() => {
+    console.log("Dashboard mounted, loading data...");
     const data = loadRiwayatData();
+    console.log("Loaded data:", data);
 
     // Setup Chart
     try {
@@ -193,9 +200,40 @@ export default function DashboardInventaris() {
         </button>
       </div>
 
-      {/* Debug Info - Hapus setelah testing */}
+      {/* Debug Info & Test Data Button */}
       <div class="mb-4 p-4 bg-blue-50 rounded-lg">
-        <p class="text-sm text-blue-800">Debug: Total data di localStorage: {riwayat().length}</p>
+        <div class="flex justify-between items-center mb-2">
+          <p class="text-sm text-blue-800">Debug: Total data di localStorage: {riwayat().length}</p>
+          <button
+            onClick={() => {
+              // Test data untuk debugging
+              const testData = [
+                {
+                  id: generateId(),
+                  name: "Tenda Camping",
+                  date: "2024-12-01",
+                  duration: "3 hari",
+                  price: "150000",
+                  status: "Diproses"
+                },
+                {
+                  id: generateId(),
+                  name: "Sleeping Bag",
+                  date: "2024-11-15", 
+                  duration: "2 hari",
+                  price: "75000",
+                  status: "Selesai"
+                }
+              ];
+              localStorage.setItem("riwayatSewa", JSON.stringify(testData));
+              setRiwayat(testData);
+              console.log("Test data added:", testData);
+            }}
+            class="px-3 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600"
+          >
+            Add Test Data
+          </button>
+        </div>
         {riwayat().length > 0 && (
           <p class="text-xs text-blue-600">Sample data: {JSON.stringify(riwayat()[0])}</p>
         )}
