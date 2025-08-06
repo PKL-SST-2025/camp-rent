@@ -5,11 +5,6 @@ import * as am5xy from "@amcharts/amcharts5/xy";
 import am5themes_Animated from "@amcharts/amcharts5/themes/Animated";
 import { ShoppingCart, Lock, Clock, Eye, BarChart3 } from "lucide-solid";
 
-// Hapus AgGrid sementara untuk menghindari error
-// import AgGridSolid from "ag-grid-solid";
-// import "ag-grid-community/styles/ag-grid.css";
-// import "ag-grid-community/styles/ag-theme-alpine.css";
-
 type RiwayatItem = {
   id?: number;
   name: string;
@@ -30,7 +25,7 @@ export default function DashboardInventaris() {
     return Date.now() + Math.floor(Math.random() * 1000);
   }
 
-  // Fungsi untuk load dan fix data
+  // Fungsi untuk load dan fix data - SAMA seperti di Riwayat.jsx
   const loadRiwayatData = () => {
     try {
       console.log("Loading riwayat data from localStorage...");
@@ -40,7 +35,7 @@ export default function DashboardInventaris() {
       const initialData = saved ? JSON.parse(saved) : [];
       console.log("Parsed initial data:", initialData);
       
-      // Auto-fix data lama yang belum punya id
+      // Auto-fix data lama yang belum punya id - SAMA seperti di Riwayat.jsx
       const fixedData = initialData.map((item: any) => ({
         ...item,
         id: item.id ?? generateId()
@@ -167,17 +162,29 @@ export default function DashboardInventaris() {
     navigate(`/tracking/${id}`);
   };
 
-  // Format date untuk display
-  const formatDate = (dateString: string) => {
+  // Format date untuk display - SAMA seperti di Riwayat.jsx
+  const formatDateRange = (dateString: string, duration: string) => {
     try {
-      const date = new Date(dateString);
-      return date.toLocaleDateString('id-ID', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric'
+      const start = new Date(dateString);
+      const durationNum = parseInt(duration);
+      
+      if (isNaN(start.getTime()) || isNaN(durationNum)) {
+        return "Invalid Date";
+      }
+      
+      const end = new Date(start);
+      end.setDate(start.getDate() + durationNum);
+      
+      const formatter = new Intl.DateTimeFormat("id-ID", {
+        day: "2-digit",
+        month: "long",
+        year: "numeric",
       });
-    } catch {
-      return dateString;
+      
+      return `${formatter.format(start)} - ${formatter.format(end)}`;
+    } catch (error) {
+      console.error("Error formatting date:", error);
+      return "Invalid Date";
     }
   };
 
@@ -298,7 +305,7 @@ export default function DashboardInventaris() {
         <div id="chartdiv" class="w-full" style={{ height: "300px" }} />
       </div>
 
-      {/* Tabel Ringkasan - Native Table instead of AgGrid */}
+      {/* Tabel Ringkasan - Format SAMA seperti di Riwayat.jsx */}
       <div class="bg-white shadow rounded-lg p-6 animate-fade-in">
         <div class="flex justify-between items-center mb-4">
           <h3 class="text-xl font-semibold text-[#3F5B8B]">Pesanan Terbaru</h3>
@@ -329,22 +336,34 @@ export default function DashboardInventaris() {
                   </td>
                 </tr>
               ) : (
-                riwayat().slice(-5).reverse().map((item, index) => (
-                  <tr class="hover:bg-gray-50">
-                    <td class="px-4 py-2 text-sm text-gray-900">{item.name}</td>
-                    <td class="px-4 py-2 text-sm text-gray-600">{formatDate(item.date)}</td>
-                    <td class="px-4 py-2 text-sm text-gray-600">{item.duration}</td>
-                    <td class="px-4 py-2 text-sm text-gray-600">Rp {parseInt(item.price || '0').toLocaleString('id-ID')}</td>
-                    <td class="px-4 py-2">
-                      <button
-                        onClick={() => item.id && goToTracking(item.id)}
-                        class={`px-3 py-1 rounded-full text-white text-xs font-medium ${getStatusColor(item.status)} hover:opacity-90 transition duration-150 cursor-pointer`}
-                      >
-                        {item.status}
-                      </button>
-                    </td>
-                  </tr>
-                ))
+                // Sort berdasarkan tanggal terbaru, ambil 5 teratas
+                riwayat()
+                  .slice()
+                  .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                  .slice(0, 5)
+                  .map((item, index) => (
+                    <tr class="hover:bg-gray-50">
+                      <td class="px-4 py-2 text-sm text-gray-900">{item.name}</td>
+                      <td class="px-4 py-2 text-sm text-gray-600">
+                        {formatDateRange(item.date, item.duration)}
+                      </td>
+                      <td class="px-4 py-2 text-sm text-gray-600">{item.duration}</td>
+                      <td class="px-4 py-2 text-sm text-gray-600">
+                        {item.price && !isNaN(parseInt(item.price)) 
+                          ? `Rp ${parseInt(item.price).toLocaleString('id-ID')}`
+                          : "Rp NaN"
+                        }
+                      </td>
+                      <td class="px-4 py-2">
+                        <button
+                          onClick={() => item.id && goToTracking(item.id)}
+                          class={`px-3 py-1 rounded-full text-white text-xs font-medium ${getStatusColor(item.status)} hover:opacity-90 transition duration-150 cursor-pointer`}
+                        >
+                          {item.status}
+                        </button>
+                      </td>
+                    </tr>
+                  ))
               )}
             </tbody>
           </table>
