@@ -230,7 +230,12 @@ export default function DashboardInventaris() {
       <div class="bg-white shadow rounded-lg p-6 mb-6 animate-fade-in">
         <div class="flex justify-between items-center mb-4">
           <h3 class="text-xl font-semibold text-[#3F5B8B]">Grafik Penyewaan Bulanan</h3>
-          <span class="text-sm text-[#7A7A8B]">Juli - Desember 2024</span>
+          <span class="text-sm text-[#7A7A8B]">
+  Juli - Desember {riwayat().length > 0 
+    ? new Date(riwayat()[0].date).getFullYear() 
+    : new Date().getFullYear()}
+</span>
+
         </div>
         <div id="chartdiv" class="w-full" style={{ height: "300px" }} />
       </div>
