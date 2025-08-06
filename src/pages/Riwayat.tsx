@@ -7,7 +7,6 @@ import "ag-grid-community/styles/ag-theme-alpine.css";
 export default function Riwayat() {
   const navigate = useNavigate();
 
-  // Fungsi buat bikin ID unik
   function generateId() {
     return Date.now() + Math.floor(Math.random() * 1000);
   }
@@ -15,10 +14,9 @@ export default function Riwayat() {
   const saved = localStorage.getItem("riwayatSewa");
   const initialData = saved ? JSON.parse(saved) : [];
 
-  // Auto-fix data lama yang belum punya id
   const fixedData = initialData.map((item: any) => ({
     ...item,
-    id: item.id ?? generateId()
+    id: item.id ?? generateId(),
   }));
   localStorage.setItem("riwayatSewa", JSON.stringify(fixedData));
 
@@ -37,6 +35,35 @@ export default function Riwayat() {
     localStorage.setItem("riwayatSewa", JSON.stringify(updated));
   };
 
+  // 📌 Helper format tanggal
+  const formatDateRange = (dateString: string, duration: string) => {
+    if (!dateString) return "-";
+    try {
+      const start = new Date(dateString);
+      const durationNum = parseInt(duration?.toString().replace(/\D/g, "")) || 0;
+      if (isNaN(start.getTime())) return "-";
+      const end = new Date(start);
+      end.setDate(start.getDate() + durationNum);
+      const formatter = new Intl.DateTimeFormat("id-ID", {
+        day: "2-digit",
+        month: "long",
+        year: "numeric",
+      });
+      return durationNum > 0
+        ? `${formatter.format(start)} - ${formatter.format(end)}`
+        : formatter.format(start);
+    } catch {
+      return "-";
+    }
+  };
+
+  // 📌 Helper format harga
+  const formatPrice = (price: string | number) => {
+    const num = parseInt(price as string);
+    if (isNaN(num) || num <= 0) return "Rp 0";
+    return `Rp ${num.toLocaleString("id-ID")}`;
+  };
+
   const columnDefs = [
     { headerName: "Nama Barang", field: "name", flex: 1, minWidth: 130 },
     {
@@ -44,26 +71,17 @@ export default function Riwayat() {
       field: "date",
       flex: 1,
       minWidth: 180,
-      cellRenderer: (params: any) => {
-        try {
-          const start = new Date(params.value);
-          const duration = parseInt(params.data?.duration);
-          if (isNaN(start.getTime()) || isNaN(duration)) return params.value;
-          const end = new Date(start);
-          end.setDate(start.getDate() + duration);
-          const formatter = new Intl.DateTimeFormat("id-ID", {
-            day: "2-digit",
-            month: "long",
-            year: "numeric",
-          });
-          return `${formatter.format(start)} - ${formatter.format(end)}`;
-        } catch {
-          return params.value;
-        }
-      },
+      cellRenderer: (params: any) =>
+        formatDateRange(params.value, params.data?.duration),
     },
     { headerName: "Durasi", field: "duration", flex: 0.7, minWidth: 100 },
-    { headerName: "Total", field: "price", flex: 1, minWidth: 130 },
+    {
+      headerName: "Total",
+      field: "price",
+      flex: 1,
+      minWidth: 130,
+      cellRenderer: (params: any) => formatPrice(params.value),
+    },
     {
       headerName: "Status",
       field: "status",
@@ -81,7 +99,7 @@ export default function Riwayat() {
 
         const container = document.createElement("div");
         const badge = document.createElement("a");
-        badge.href = `/tracking/${id}`; // langsung ke detail tracking
+        badge.href = `/tracking/${id}`;
         badge.className = `px-3 py-1 rounded-full text-white text-xs font-medium ${color} hover:opacity-90 transition duration-150 cursor-pointer`;
         badge.textContent = status;
         container.appendChild(badge);
