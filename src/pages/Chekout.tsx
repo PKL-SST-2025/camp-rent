@@ -46,34 +46,52 @@ export default function Checkout() {
   };
 
   const handleSubmit = (e: Event) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    if (!formData().name || !formData().email || !formData().method) {
-      alert("Mohon isi data wajib terlebih dahulu.");
-      return;
-    }
-    if (!formData().agreement) {
-      alert("Harap setujui syarat dan ketentuan.");
-      return;
-    }
+  if (!formData().name || !formData().email || !formData().method) {
+    alert("Mohon isi data wajib terlebih dahulu.");
+    return;
+  }
+  if (!formData().agreement) {
+    alert("Harap setujui syarat dan ketentuan.");
+    return;
+  }
 
-    const checkoutData = {
-      name: formData().name,
-      items: items().map((item) => ({
-        name: item.name,
-        days: item.quantity,
-        price: item.price,
-        total: item.price * item.quantity,
-      })),
-      subtotal: subtotal(),
-      shipping: getShippingCost(),
-      total: total(),
-    };
-
-    localStorage.setItem("checkoutData", JSON.stringify(checkoutData));
-    alert("✅ Checkout berhasil!");
-    navigate("/checkout-summary");
+  // Data untuk checkout summary
+  const checkoutData = {
+    name: formData().name,
+    items: items().map((item) => ({
+      name: item.name,
+      days: item.quantity,
+      price: item.price,
+      total: item.price * item.quantity,
+    })),
+    subtotal: subtotal(),
+    shipping: getShippingCost(),
+    total: total(),
   };
+
+  // Simpan ke checkout summary
+  localStorage.setItem("checkoutData", JSON.stringify(checkoutData));
+
+  // Simpan ke riwayatSewa untuk Dashboard & Riwayat
+  const riwayatSewa = JSON.parse(localStorage.getItem("riwayatSewa") || "[]");
+  const tanggalSekarang = new Date().toISOString().split("T")[0]; // format YYYY-MM-DD
+  items().forEach((item) => {
+    riwayatSewa.push({
+      id: Date.now() + Math.floor(Math.random() * 1000),
+      name: item.name,
+      date: tanggalSekarang,
+      duration: `${item.quantity} Hari`,
+      price: item.price * item.quantity,
+      status: "Diproses",
+    });
+  });
+  localStorage.setItem("riwayatSewa", JSON.stringify(riwayatSewa));
+
+  alert("✅ Checkout berhasil!");
+  navigate("/checkout-summary");
+};
 
   return (
     <div class="p-6 max-w-3xl mx-auto text-[#3F5B8B]">
