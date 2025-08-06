@@ -4,9 +4,11 @@ import * as am5 from "@amcharts/amcharts5";
 import * as am5xy from "@amcharts/amcharts5/xy";
 import am5themes_Animated from "@amcharts/amcharts5/themes/Animated";
 import { ShoppingCart, Lock, Clock, Eye, BarChart3 } from "lucide-solid";
-import AgGridSolid from "ag-grid-solid";
-import "ag-grid-community/styles/ag-grid.css";
-import "ag-grid-community/styles/ag-theme-alpine.css";
+
+// Hapus AgGrid sementara untuk menghindari error
+// import AgGridSolid from "ag-grid-solid";
+// import "ag-grid-community/styles/ag-grid.css";
+// import "ag-grid-community/styles/ag-theme-alpine.css";
 
 type RiwayatItem = {
   id?: number;
@@ -30,95 +32,107 @@ export default function DashboardInventaris() {
 
   // Fungsi untuk load dan fix data
   const loadRiwayatData = () => {
-    const saved = localStorage.getItem("riwayatSewa");
-    const initialData = saved ? JSON.parse(saved) : [];
-    
-    // Auto-fix data lama yang belum punya id (sama seperti di Riwayat)
-    const fixedData = initialData.map((item: any) => ({
-      ...item,
-      id: item.id ?? generateId()
-    }));
-    
-    localStorage.setItem("riwayatSewa", JSON.stringify(fixedData));
-    setRiwayat(fixedData);
-    return fixedData;
+    try {
+      const saved = localStorage.getItem("riwayatSewa");
+      const initialData = saved ? JSON.parse(saved) : [];
+      
+      // Auto-fix data lama yang belum punya id
+      const fixedData = initialData.map((item: any) => ({
+        ...item,
+        id: item.id ?? generateId()
+      }));
+      
+      localStorage.setItem("riwayatSewa", JSON.stringify(fixedData));
+      setRiwayat(fixedData);
+      return fixedData;
+    } catch (error) {
+      console.error("Error loading data:", error);
+      return [];
+    }
   };
 
   onMount(() => {
     const data = loadRiwayatData();
 
     // Setup Chart
-    root = am5.Root.new("chartdiv");
+    try {
+      root = am5.Root.new("chartdiv");
 
-    const myTheme = am5.Theme.new(root);
-    myTheme.rule("Label", []).setAll({ fill: am5.color(0x3F5B8B), fontSize: 14 });
-    myTheme.rule("Grid", []).setAll({ stroke: am5.color(0xE3ECF7) });
-    myTheme.rule("AxisLabel", []).setAll({ fill: am5.color(0x6C5E82), fontSize: 12 });
+      const myTheme = am5.Theme.new(root);
+      myTheme.rule("Label", []).setAll({ fill: am5.color(0x3F5B8B), fontSize: 14 });
+      myTheme.rule("Grid", []).setAll({ stroke: am5.color(0xE3ECF7) });
+      myTheme.rule("AxisLabel", []).setAll({ fill: am5.color(0x6C5E82), fontSize: 12 });
 
-    root.setThemes([am5themes_Animated.new(root), myTheme]);
+      root.setThemes([am5themes_Animated.new(root), myTheme]);
 
-    const chart = root.container.children.push(
-      am5xy.XYChart.new(root, {
-        panX: true,
-        panY: false,
-        wheelX: "panX",
-        wheelY: "zoomX",
-        layout: root.verticalLayout,
-      })
-    );
+      const chart = root.container.children.push(
+        am5xy.XYChart.new(root, {
+          panX: true,
+          panY: false,
+          wheelX: "panX",
+          wheelY: "zoomX",
+          layout: root.verticalLayout,
+        })
+      );
 
-    const xAxis = chart.xAxes.push(
-      am5xy.CategoryAxis.new(root, {
-        categoryField: "bulan",
-        renderer: am5xy.AxisRendererX.new(root, { minGridDistance: 30 }),
-      })
-    );
+      const xAxis = chart.xAxes.push(
+        am5xy.CategoryAxis.new(root, {
+          categoryField: "bulan",
+          renderer: am5xy.AxisRendererX.new(root, { minGridDistance: 30 }),
+        })
+      );
 
-    const yAxis = chart.yAxes.push(
-      am5xy.ValueAxis.new(root, {
-        renderer: am5xy.AxisRendererY.new(root, {}),
-      })
-    );
+      const yAxis = chart.yAxes.push(
+        am5xy.ValueAxis.new(root, {
+          renderer: am5xy.AxisRendererY.new(root, {}),
+        })
+      );
 
-    const series = chart.series.push(
-      am5xy.ColumnSeries.new(root, {
-        name: "Penyewaan",
-        xAxis,
-        yAxis,
-        valueYField: "jumlah",
-        categoryXField: "bulan",
-      })
-    );
+      const series = chart.series.push(
+        am5xy.ColumnSeries.new(root, {
+          name: "Penyewaan",
+          xAxis,
+          yAxis,
+          valueYField: "jumlah",
+          categoryXField: "bulan",
+        })
+      );
 
-    series.columns.template.setAll({
-      fill: am5.color(0x3F5B8B),
-      stroke: am5.color(0x3F5B8B),
-      cornerRadiusTL: 5,
-      cornerRadiusTR: 5,
-    });
+      series.columns.template.setAll({
+        fill: am5.color(0x3F5B8B),
+        stroke: am5.color(0x3F5B8B),
+        cornerRadiusTL: 5,
+        cornerRadiusTR: 5,
+      });
 
-    const months = ["Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
-    const chartData = months.map((bulan) => ({ bulan, jumlah: 0 }));
+      const months = ["Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+      const chartData = months.map((bulan) => ({ bulan, jumlah: 0 }));
 
-    data.forEach((item: RiwayatItem) => {
-  const date = new Date(item.date);
-  const monthIndex = date.getMonth();
-  if (monthIndex >= 6) {
-    chartData[monthIndex - 6].jumlah += 1;
-  }
-});
+      data.forEach((item: RiwayatItem) => {
+        try {
+          const date = new Date(item.date);
+          const monthIndex = date.getMonth();
+          if (monthIndex >= 6 && monthIndex <= 11) {
+            chartData[monthIndex - 6].jumlah += 1;
+          }
+        } catch (error) {
+          console.error("Error parsing date:", item.date);
+        }
+      });
 
-
-    xAxis.data.setAll(chartData);
-    series.data.setAll(chartData);
+      xAxis.data.setAll(chartData);
+      series.data.setAll(chartData);
+    } catch (error) {
+      console.error("Error setting up chart:", error);
+    }
   });
 
   onCleanup(() => {
-    root?.dispose();
+    if (root) {
+      root.dispose();
+    }
   });
 
-  const lastValid = () => riwayat().filter((r) => r.id).at(-1);
-  
   // Hitung statistik berdasarkan status
   const getStatusCounts = () => {
     const data = riwayat();
@@ -139,6 +153,30 @@ export default function DashboardInventaris() {
     navigate(`/tracking/${id}`);
   };
 
+  // Format date untuk display
+  const formatDate = (dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('id-ID', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric'
+      });
+    } catch {
+      return dateString;
+    }
+  };
+
+  // Get status color
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "Diproses": return "bg-yellow-400";
+      case "Dikirim": return "bg-blue-400";
+      case "Selesai": return "bg-green-500";
+      default: return "bg-gray-400";
+    }
+  };
+
   const statusCounts = getStatusCounts();
 
   return (
@@ -153,6 +191,14 @@ export default function DashboardInventaris() {
           <Eye size={16} />
           Lihat Riwayat Lengkap
         </button>
+      </div>
+
+      {/* Debug Info - Hapus setelah testing */}
+      <div class="mb-4 p-4 bg-blue-50 rounded-lg">
+        <p class="text-sm text-blue-800">Debug: Total data di localStorage: {riwayat().length}</p>
+        {riwayat().length > 0 && (
+          <p class="text-xs text-blue-600">Sample data: {JSON.stringify(riwayat()[0])}</p>
+        )}
       </div>
 
       {/* Statistik Cards */}
@@ -201,7 +247,7 @@ export default function DashboardInventaris() {
         <div id="chartdiv" class="w-full" style={{ height: "300px" }} />
       </div>
 
-      {/* Tabel Ringkasan - Menampilkan 5 data terakhir */}
+      {/* Tabel Ringkasan - Native Table instead of AgGrid */}
       <div class="bg-white shadow rounded-lg p-6 animate-fade-in">
         <div class="flex justify-between items-center mb-4">
           <h3 class="text-xl font-semibold text-[#3F5B8B]">Pesanan Terbaru</h3>
@@ -213,60 +259,44 @@ export default function DashboardInventaris() {
           </button>
         </div>
         
-        <div class="ag-theme-alpine overflow-auto" style="height: 300px; width: 100%;">
-          <AgGridSolid
-            rowData={riwayat().slice(-5).reverse()} // 5 data terakhir, dibalik urutannya
-            columnDefs={[
-              { headerName: "Nama Barang", field: "name", flex: 1.5 },
-              { 
-                headerName: "Tanggal", 
-                field: "date", 
-                flex: 1,
-                cellRenderer: (params: any) => {
-                  try {
-                    const date = new Date(params.value);
-                    return date.toLocaleDateString('id-ID', {
-                      day: '2-digit',
-                      month: 'short',
-                      year: 'numeric'
-                    });
-                  } catch {
-                    return params.value;
-                  }
-                }
-              },
-              { headerName: "Durasi", field: "duration", flex: 0.8 },
-              { 
-                headerName: "Status", 
-                field: "status", 
-                flex: 1,
-                cellRenderer: (params: any) => {
-                  const status = params.value;
-                  const id = params.data?.id;
-                  const color =
-                    status === "Diproses"
-                      ? "bg-yellow-400"
-                      : status === "Dikirim"
-                      ? "bg-blue-400"
-                      : "bg-green-500";
-
-                  const container = document.createElement("div");
-                  const badge = document.createElement("button");
-                  badge.className = `px-3 py-1 rounded-full text-white text-xs font-medium ${color} hover:opacity-90 transition duration-150 cursor-pointer`;
-                  badge.textContent = status;
-                  badge.onclick = () => goToTracking(id);
-                  container.appendChild(badge);
-                  return container;
-                }
-              },
-            ]}
-            defaultColDef={{
-              sortable: true,
-              filter: false,
-              resizable: true,
-            }}
-            suppressCellFocus={true}
-          />
+        <div class="overflow-x-auto">
+          <table class="min-w-full table-auto">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-4 py-2 text-left text-sm font-medium text-gray-700">Nama Barang</th>
+                <th class="px-4 py-2 text-left text-sm font-medium text-gray-700">Tanggal</th>
+                <th class="px-4 py-2 text-left text-sm font-medium text-gray-700">Durasi</th>
+                <th class="px-4 py-2 text-left text-sm font-medium text-gray-700">Harga</th>
+                <th class="px-4 py-2 text-left text-sm font-medium text-gray-700">Status</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+              {riwayat().length === 0 ? (
+                <tr>
+                  <td colSpan={5} class="px-4 py-8 text-center text-gray-500">
+                    Belum ada data pesanan
+                  </td>
+                </tr>
+              ) : (
+                riwayat().slice(-5).reverse().map((item, index) => (
+                  <tr class="hover:bg-gray-50">
+                    <td class="px-4 py-2 text-sm text-gray-900">{item.name}</td>
+                    <td class="px-4 py-2 text-sm text-gray-600">{formatDate(item.date)}</td>
+                    <td class="px-4 py-2 text-sm text-gray-600">{item.duration}</td>
+                    <td class="px-4 py-2 text-sm text-gray-600">Rp {parseInt(item.price || '0').toLocaleString('id-ID')}</td>
+                    <td class="px-4 py-2">
+                      <button
+                        onClick={() => item.id && goToTracking(item.id)}
+                        class={`px-3 py-1 rounded-full text-white text-xs font-medium ${getStatusColor(item.status)} hover:opacity-90 transition duration-150 cursor-pointer`}
+                      >
+                        {item.status}
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
 
