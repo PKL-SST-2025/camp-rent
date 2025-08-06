@@ -5,6 +5,7 @@ type FormField = "name" | "email" | "phone" | "address" | "method" | "agreement"
 
 export default function Checkout() {
   const [formData, setFormData] = createSignal<{
+    [key: string]: string | boolean;
     name: string;
     email: string;
     phone: string;
@@ -28,21 +29,14 @@ export default function Checkout() {
     if (saved) setItems(JSON.parse(saved));
   });
 
-  // Format tanggal sekarang
-  const getToday = () => {
-    const now = new Date();
-    return now.toISOString().split("T")[0]; // yyyy-mm-dd
-  };
-
-  // Hitung subtotal
   const subtotal = () =>
     items().reduce((acc, item) => acc + item.price * item.quantity, 0);
 
-  // Hitung biaya kirim
   const getShippingCost = () => {
-    if (formData().method === "cod") return 10000;
-    if (formData().method === "transfer") return 2500;
-    return 0;
+    const method = formData().method;
+    if (method === "cod") return 10000;
+    if (method === "transfer") return 2500;
+    return 0; // ewallet atau kosong
   };
 
   const total = () => subtotal() + getShippingCost();
@@ -52,49 +46,52 @@ export default function Checkout() {
   };
 
   const handleSubmit = (e: Event) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    // Validasi
-    if (!formData().name || !formData().email || !formData().method) {
-      alert("Mohon isi data wajib terlebih dahulu.");
-      return;
-    }
-    if (!formData().agreement) {
-      alert("Harap setujui syarat dan ketentuan.");
-      return;
-    }
+  if (!formData().name || !formData().email || !formData().method) {
+    alert("Mohon isi data wajib terlebih dahulu.");
+    return;
+  }
+  if (!formData().agreement) {
+    alert("Harap setujui syarat dan ketentuan.");
+    return;
+  }
 
-    // Simpan untuk halaman checkout-summary
-    const checkoutData = {
-      name: formData().name,
-      items: items().map((item) => ({
-        name: item.name,
-        days: item.quantity,
-        price: item.price,
-        total: item.price * item.quantity,
-      })),
-      subtotal: subtotal(),
-      shipping: getShippingCost(),
-      total: total(),
-    };
-    localStorage.setItem("checkoutData", JSON.stringify(checkoutData));
-
-    // Simpan ke riwayatSewa (1 pesanan saja)
-    const riwayatSewa = JSON.parse(localStorage.getItem("riwayatSewa") || "[]");
-    riwayatSewa.push({
-      id: Date.now(),
-      name: formData().name,
-      date: getToday(),
-      duration: `${items().reduce((a, b) => a + b.quantity, 0)} Hari`,
-      price: total(),
-      status: "Diproses",
-      items: items(),
-    });
-    localStorage.setItem("riwayatSewa", JSON.stringify(riwayatSewa));
-
-    alert("✅ Checkout berhasil!");
-    navigate("/checkout-summary");
+  // Data untuk checkout summary
+  const checkoutData = {
+    name: formData().name,
+    items: items().map((item) => ({
+      name: item.name,
+      days: item.quantity,
+      price: item.price,
+      total: item.price * item.quantity,
+    })),
+    subtotal: subtotal(),
+    shipping: getShippingCost(),
+    total: total(),
   };
+
+  // Simpan ke checkout summary
+  localStorage.setItem("checkoutData", JSON.stringify(checkoutData));
+
+  // Simpan ke riwayatSewa untuk Dashboard & Riwayat
+  const riwayatSewa = JSON.parse(localStorage.getItem("riwayatSewa") || "[]");
+  const tanggalSekarang = new Date().toISOString().split("T")[0]; // format YYYY-MM-DD
+  items().forEach((item) => {
+    riwayatSewa.push({
+      id: Date.now() + Math.floor(Math.random() * 1000),
+      name: item.name,
+      date: tanggalSekarang,
+      duration: `${item.quantity} Hari`,
+      price: item.price * item.quantity,
+      status: "Diproses",
+    });
+  });
+  localStorage.setItem("riwayatSewa", JSON.stringify(riwayatSewa));
+
+  alert("✅ Checkout berhasil!");
+  navigate("/checkout-summary");
+};
 
   return (
     <div class="p-6 max-w-3xl mx-auto text-[#3F5B8B]">
@@ -156,7 +153,7 @@ export default function Checkout() {
         <div class="flex items-center gap-2">
           <input
             type="checkbox"
-            checked={formData().agreement}
+            checked={formData().agreement as boolean}
             onInput={(e) => handleInputChange("agreement", e.currentTarget.checked)}
           />
           <label class="text-sm">
@@ -167,7 +164,7 @@ export default function Checkout() {
 
         <div class="flex justify-between items-center mt-4">
           <span class="font-semibold text-base">
-            Total: Rp {total().toLocaleString("id-ID")}
+            Total: Rp.{total().toLocaleString("id-ID")}
           </span>
           <button
             type="submit"
