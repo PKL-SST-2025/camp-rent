@@ -166,7 +166,8 @@ export default function DashboardInventaris() {
   const formatDateRange = (dateString: string, duration: string) => {
     try {
       const start = new Date(dateString);
-      const durationNum = parseInt(duration);
+      // Parse duration - ambil angka aja dari string "3 hari" -> 3
+      const durationNum = parseInt(duration.toString().replace(/\D/g, ''));
       
       if (isNaN(start.getTime()) || isNaN(durationNum)) {
         return "Invalid Date";
