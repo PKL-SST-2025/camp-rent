@@ -1,4 +1,4 @@
-import { onMount, onCleanup, createSignal } from "solid-js";
+import { onMount, onCleanup, createSignal, createMemo } from "solid-js";
 import { useNavigate } from "@solidjs/router";
 import * as am5 from "@amcharts/amcharts5";
 import * as am5xy from "@amcharts/amcharts5/xy";
@@ -140,8 +140,8 @@ export default function DashboardInventaris() {
     }
   });
 
-  // Hitung statistik berdasarkan status
-  const getStatusCounts = () => {
+  // Hitung statistik berdasarkan status - Ubah jadi createMemo untuk reactivity
+  const statusCounts = createMemo(() => {
     const data = riwayat();
     console.log("Calculating status counts for data:", data);
     
@@ -155,7 +155,7 @@ export default function DashboardInventaris() {
     console.log("All statuses:", data.map(r => r.status));
     
     return counts;
-  };
+  });
 
   // Handler untuk navigasi ke riwayat
   const goToRiwayat = () => {
@@ -190,8 +190,6 @@ export default function DashboardInventaris() {
       default: return "bg-gray-400";
     }
   };
-
-  const statusCounts = getStatusCounts();
 
   return (
     <>
@@ -266,20 +264,20 @@ export default function DashboardInventaris() {
           {
             icon: <Clock class="mx-auto mb-3 text-[#F4B942]" size={32} />,
             title: "Diproses",
-            value: statusCounts.diproses,
-            subtitle: `${statusCounts.diproses} pesanan`,
+            value: statusCounts().diproses,
+            subtitle: `${statusCounts().diproses} pesanan`,
           },
           {
             icon: <Lock class="mx-auto mb-3 text-[#3B7DA6]" size={32} />,
             title: "Dikirim",
-            value: statusCounts.dikirim,
-            subtitle: `${statusCounts.dikirim} pesanan`,
+            value: statusCounts().dikirim,
+            subtitle: `${statusCounts().dikirim} pesanan`,
           },
           {
             icon: <BarChart3 class="mx-auto mb-3 text-[#4ADE80]" size={32} />,
             title: "Selesai",
-            value: statusCounts.selesai,
-            subtitle: `${statusCounts.selesai} pesanan`,
+            value: statusCounts().selesai,
+            subtitle: `${statusCounts().selesai} pesanan`,
           },
         ].map(({ icon, title, value, subtitle }) => (
           <div class="bg-white shadow rounded-lg p-5 text-center hover:shadow-xl transition duration-300 transform hover:scale-105">
