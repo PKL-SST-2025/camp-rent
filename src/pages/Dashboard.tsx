@@ -15,24 +15,49 @@ type RiwayatItem = {
   statusColor?: string;
 };
 
+// ✅ Format tanggal & harga langsung di sini
+function formatDateRange(dateString: string, duration: string) {
+  try {
+    const start = new Date(dateString);
+    const durationNum = parseInt(duration?.toString().replace(/\D/g, ""));
+    if (isNaN(start.getTime()) || isNaN(durationNum)) return "-";
+
+    const end = new Date(start);
+    end.setDate(start.getDate() + durationNum);
+
+    const formatter = new Intl.DateTimeFormat("id-ID", {
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+    });
+
+    return `${formatter.format(start)} - ${formatter.format(end)}`;
+  } catch {
+    return "-";
+  }
+}
+
+function formatPrice(price: string | number) {
+  const num = parseInt(price as string);
+  return !isNaN(num) ? `Rp ${num.toLocaleString("id-ID")}` : "Rp 0";
+}
+
 export default function DashboardInventaris() {
   const navigate = useNavigate();
   let root: am5.Root;
   const [riwayat, setRiwayat] = createSignal<RiwayatItem[]>([]);
 
-  // Generate ID unik
   function generateId() {
     return Date.now() + Math.floor(Math.random() * 1000);
   }
 
-  // Load data dari localStorage & perbaiki ID
   const loadRiwayatData = () => {
     try {
       const saved = localStorage.getItem("riwayatSewa");
       const initialData = saved ? JSON.parse(saved) : [];
       const fixedData = initialData.map((item: any) => ({
         ...item,
-        id: item.id ?? generateId(),
+        id: item.id ?? generateId()
       }));
       localStorage.setItem("riwayatSewa", JSON.stringify(fixedData));
       setRiwayat(fixedData);
@@ -42,120 +67,82 @@ export default function DashboardInventaris() {
     }
   };
 
-  // Helper format tanggal
-  const formatDateRange = (dateString: string, duration: string) => {
-    if (!dateString) return "-";
-    try {
-      const start = new Date(dateString);
-      const durationNum = parseInt(duration?.toString().replace(/\D/g, "")) || 0;
-
-      if (isNaN(start.getTime())) return "-";
-
-      const end = new Date(start);
-      end.setDate(start.getDate() + durationNum);
-
-      const formatter = new Intl.DateTimeFormat("id-ID", {
-        day: "2-digit",
-        month: "long",
-        year: "numeric",
-      });
-
-      return durationNum > 0
-        ? `${formatter.format(start)} - ${formatter.format(end)}`
-        : formatter.format(start);
-    } catch {
-      return "-";
-    }
-  };
-
-  // Helper format harga
-  const formatPrice = (price: string | number) => {
-    const num = parseInt(price as string);
-    if (isNaN(num) || num <= 0) return "Rp 0";
-    return `Rp ${num.toLocaleString("id-ID")}`;
-  };
-
-  // Chart setup
   onMount(() => {
     const data = loadRiwayatData();
+    try {
+      root = am5.Root.new("chartdiv");
+      const myTheme = am5.Theme.new(root);
+      myTheme.rule("Label", []).setAll({ fill: am5.color(0x3F5B8B), fontSize: 14 });
+      myTheme.rule("Grid", []).setAll({ stroke: am5.color(0xE3ECF7) });
+      myTheme.rule("AxisLabel", []).setAll({ fill: am5.color(0x6C5E82), fontSize: 12 });
+      root.setThemes([am5themes_Animated.new(root), myTheme]);
 
-    root = am5.Root.new("chartdiv");
+      const chart = root.container.children.push(
+        am5xy.XYChart.new(root, {
+          panX: true,
+          panY: false,
+          wheelX: "panX",
+          wheelY: "zoomX",
+          layout: root.verticalLayout,
+        })
+      );
 
-    const myTheme = am5.Theme.new(root);
-    myTheme.rule("Label", []).setAll({ fill: am5.color(0x3F5B8B), fontSize: 14 });
-    myTheme.rule("Grid", []).setAll({ stroke: am5.color(0xE3ECF7) });
-    myTheme.rule("AxisLabel", []).setAll({ fill: am5.color(0x6C5E82), fontSize: 12 });
+      const xAxis = chart.xAxes.push(
+        am5xy.CategoryAxis.new(root, {
+          categoryField: "bulan",
+          renderer: am5xy.AxisRendererX.new(root, { minGridDistance: 30 }),
+        })
+      );
 
-    root.setThemes([am5themes_Animated.new(root), myTheme]);
+      const yAxis = chart.yAxes.push(
+        am5xy.ValueAxis.new(root, {
+          renderer: am5xy.AxisRendererY.new(root, {}),
+        })
+      );
 
-    const chart = root.container.children.push(
-      am5xy.XYChart.new(root, {
-        panX: true,
-        panY: false,
-        wheelX: "panX",
-        wheelY: "zoomX",
-        layout: root.verticalLayout,
-      })
-    );
+      const series = chart.series.push(
+        am5xy.ColumnSeries.new(root, {
+          name: "Penyewaan",
+          xAxis,
+          yAxis,
+          valueYField: "jumlah",
+          categoryXField: "bulan",
+        })
+      );
 
-    const xAxis = chart.xAxes.push(
-      am5xy.CategoryAxis.new(root, {
-        categoryField: "bulan",
-        renderer: am5xy.AxisRendererX.new(root, { minGridDistance: 30 }),
-      })
-    );
+      series.columns.template.setAll({
+        fill: am5.color(0x3F5B8B),
+        stroke: am5.color(0x3F5B8B),
+        cornerRadiusTL: 5,
+        cornerRadiusTR: 5,
+      });
 
-    const yAxis = chart.yAxes.push(
-      am5xy.ValueAxis.new(root, {
-        renderer: am5xy.AxisRendererY.new(root, {}),
-      })
-    );
+      const months = ["Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+      const chartData = months.map((bulan) => ({ bulan, jumlah: 0 }));
 
-    const series = chart.series.push(
-      am5xy.ColumnSeries.new(root, {
-        name: "Penyewaan",
-        xAxis,
-        yAxis,
-        valueYField: "jumlah",
-        categoryXField: "bulan",
-      })
-    );
+      data.forEach((item: RiwayatItem) => {
+        const date = new Date(item.date);
+        const monthIndex = date.getMonth();
+        if (monthIndex >= 6 && monthIndex <= 11) {
+          chartData[monthIndex - 6].jumlah += 1;
+        }
+      });
 
-    series.columns.template.setAll({
-      fill: am5.color(0x3F5B8B),
-      stroke: am5.color(0x3F5B8B),
-      cornerRadiusTL: 5,
-      cornerRadiusTR: 5,
-    });
-
-    const months = ["Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
-    const chartData = months.map((bulan) => ({ bulan, jumlah: 0 }));
-
-    data.forEach((item: RiwayatItem) => {
-      if (!item.date) return;
-      const date = new Date(item.date);
-      if (isNaN(date.getTime())) return;
-      const monthIndex = date.getMonth();
-      if (monthIndex >= 6 && monthIndex <= 11) {
-        chartData[monthIndex - 6].jumlah += 1;
-      }
-    });
-
-    xAxis.data.setAll(chartData);
-    series.data.setAll(chartData);
+      xAxis.data.setAll(chartData);
+      series.data.setAll(chartData);
+    } catch {}
   });
 
   onCleanup(() => {
     if (root) root.dispose();
   });
 
-  // Status count reactive
   const statusCounts = createMemo(() => {
     const data = riwayat();
     return {
-      diproses: data.filter((r) => r.status === "Diproses").length,
-      dikirim: data.filter((r) => r.status === "Dikirim").length,
-      selesai: data.filter((r) => r.status === "Selesai").length,
+      diproses: data.filter(r => r.status === "Diproses").length,
+      dikirim: data.filter(r => r.status === "Dikirim").length,
+      selesai: data.filter(r => r.status === "Selesai").length
     };
   });
 
@@ -164,78 +151,16 @@ export default function DashboardInventaris() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "Diproses":
-        return "bg-yellow-400";
-      case "Dikirim":
-        return "bg-blue-400";
-      case "Selesai":
-        return "bg-green-500";
-      default:
-        return "bg-gray-400";
+      case "Diproses": return "bg-yellow-400";
+      case "Dikirim": return "bg-blue-400";
+      case "Selesai": return "bg-green-500";
+      default: return "bg-gray-400";
     }
   };
 
   return (
     <>
-      {/* Header */}
-      <div class="flex justify-between items-center mb-6">
-        <h1 class="text-2xl font-bold text-[#3F5B8B]">Dashboard Inventaris</h1>
-        <button
-          onClick={goToRiwayat}
-          class="bg-[#6C5E82] hover:bg-[#5A4D73] text-white px-4 py-2 rounded-lg flex items-center gap-2 transition duration-200"
-        >
-          <Eye size={16} />
-          Lihat Riwayat Lengkap
-        </button>
-      </div>
-
-      {/* Statistik Cards */}
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 animate-fade-in">
-        {[
-          {
-            icon: <ShoppingCart class="mx-auto mb-3 text-[#D0797F]" size={32} />,
-            title: "Total Sewa",
-            value: riwayat().length,
-            subtitle: "Semua pesanan",
-          },
-          {
-            icon: <Clock class="mx-auto mb-3 text-[#F4B942]" size={32} />,
-            title: "Diproses",
-            value: statusCounts().diproses,
-            subtitle: `${statusCounts().diproses} pesanan`,
-          },
-          {
-            icon: <Lock class="mx-auto mb-3 text-[#3B7DA6]" size={32} />,
-            title: "Dikirim",
-            value: statusCounts().dikirim,
-            subtitle: `${statusCounts().dikirim} pesanan`,
-          },
-          {
-            icon: <BarChart3 class="mx-auto mb-3 text-[#4ADE80]" size={32} />,
-            title: "Selesai",
-            value: statusCounts().selesai,
-            subtitle: `${statusCounts().selesai} pesanan`,
-          },
-        ].map(({ icon, title, value, subtitle }) => (
-          <div class="bg-white shadow rounded-lg p-5 text-center hover:shadow-xl transition duration-300 transform hover:scale-105">
-            {icon}
-            <p class="text-sm text-[#7A7A8B]">{title}</p>
-            <p class="text-2xl font-bold text-[#2E365A]">{value}</p>
-            <p class="text-xs text-[#A0A0A0]">{subtitle}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* Chart */}
-      <div class="bg-white shadow rounded-lg p-6 mb-6 animate-fade-in">
-        <div class="flex justify-between items-center mb-4">
-          <h3 class="text-xl font-semibold text-[#3F5B8B]">Grafik Penyewaan Bulanan</h3>
-          <span class="text-sm text-[#7A7A8B]">Juli - Desember 2024</span>
-        </div>
-        <div id="chartdiv" class="w-full" style={{ height: "300px" }} />
-      </div>
-
-      {/* Tabel */}
+      {/* Tabel Ringkasan */}
       <div class="bg-white shadow rounded-lg p-6 animate-fade-in">
         <div class="flex justify-between items-center mb-4">
           <h3 class="text-xl font-semibold text-[#3F5B8B]">Pesanan Terbaru</h3>
@@ -246,69 +171,46 @@ export default function DashboardInventaris() {
             Lihat Semua <Eye size={14} />
           </button>
         </div>
-
+        
         <div class="overflow-x-auto">
           <table class="min-w-full table-auto">
             <thead class="bg-gray-50">
               <tr>
-                <th class="px-4 py-2 text-left text-sm font-medium text-gray-700">
-                  Nama Barang
-                </th>
-                <th class="px-4 py-2 text-left text-sm font-medium text-gray-700">
-                  Tanggal
-                </th>
-                <th class="px-4 py-2 text-left text-sm font-medium text-gray-700">
-                  Durasi
-                </th>
-                <th class="px-4 py-2 text-left text-sm font-medium text-gray-700">
-                  Harga
-                </th>
-                <th class="px-4 py-2 text-left text-sm font-medium text-gray-700">
-                  Status
-                </th>
+                <th class="px-4 py-2 text-left text-sm font-medium text-gray-700">Nama Barang</th>
+                <th class="px-4 py-2 text-left text-sm font-medium text-gray-700">Tanggal</th>
+                <th class="px-4 py-2 text-left text-sm font-medium text-gray-700">Durasi</th>
+                <th class="px-4 py-2 text-left text-sm font-medium text-gray-700">Harga</th>
+                <th class="px-4 py-2 text-left text-sm font-medium text-gray-700">Status</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-200">
               {riwayat().length === 0 ? (
                 <tr>
-                  <td
-                    colSpan={5}
-                    class="px-4 py-8 text-center text-gray-500"
-                  >
+                  <td colSpan={5} class="px-4 py-8 text-center text-gray-500">
                     Belum ada data pesanan
                   </td>
                 </tr>
               ) : (
                 riwayat()
                   .slice()
-                  .sort(
-                    (a, b) =>
-                      new Date(b.date).getTime() -
-                      new Date(a.date).getTime()
-                  )
+                  .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
                   .slice(0, 5)
                   .map((item) => (
                     <tr class="hover:bg-gray-50">
-                      <td class="px-4 py-2 text-sm text-gray-900">
-                        {item.name || "-"}
-                      </td>
+                      <td class="px-4 py-2 text-sm text-gray-900">{item.name}</td>
                       <td class="px-4 py-2 text-sm text-gray-600">
                         {formatDateRange(item.date, item.duration)}
                       </td>
-                      <td class="px-4 py-2 text-sm text-gray-600">
-                        {item.duration || "-"}
-                      </td>
+                      <td class="px-4 py-2 text-sm text-gray-600">{item.duration}</td>
                       <td class="px-4 py-2 text-sm text-gray-600">
                         {formatPrice(item.price)}
                       </td>
                       <td class="px-4 py-2">
                         <button
                           onClick={() => item.id && goToTracking(item.id)}
-                          class={`px-3 py-1 rounded-full text-white text-xs font-medium ${getStatusColor(
-                            item.status
-                          )} hover:opacity-90 transition duration-150 cursor-pointer`}
+                          class={`px-3 py-1 rounded-full text-white text-xs font-medium ${getStatusColor(item.status)} hover:opacity-90 transition duration-150 cursor-pointer`}
                         >
-                          {item.status || "-"}
+                          {item.status}
                         </button>
                       </td>
                     </tr>
@@ -318,19 +220,6 @@ export default function DashboardInventaris() {
           </table>
         </div>
       </div>
-
-      {/* CSS Animasi */}
-      <style>
-        {`
-          @keyframes fade-in {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-          }
-          .animate-fade-in {
-            animation: fade-in 0.6s ease-in-out;
-          }
-        `}
-      </style>
     </>
   );
 }
