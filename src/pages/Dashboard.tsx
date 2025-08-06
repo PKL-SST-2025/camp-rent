@@ -20,188 +20,164 @@ export default function DashboardInventaris() {
   let root: am5.Root;
   const [riwayat, setRiwayat] = createSignal<RiwayatItem[]>([]);
 
-  // Fungsi untuk generate ID jika belum ada
+  // Generate ID unik
   function generateId() {
     return Date.now() + Math.floor(Math.random() * 1000);
   }
 
-  // Fungsi untuk load dan fix data - SAMA seperti di Riwayat.jsx
+  // Load data dari localStorage & perbaiki ID
   const loadRiwayatData = () => {
     try {
-      console.log("Loading riwayat data from localStorage...");
       const saved = localStorage.getItem("riwayatSewa");
-      console.log("Raw localStorage data:", saved);
-      
       const initialData = saved ? JSON.parse(saved) : [];
-      console.log("Parsed initial data:", initialData);
-      
-      // Auto-fix data lama yang belum punya id - SAMA seperti di Riwayat.jsx
       const fixedData = initialData.map((item: any) => ({
         ...item,
-        id: item.id ?? generateId()
+        id: item.id ?? generateId(),
       }));
-      
-      console.log("Fixed data with IDs:", fixedData);
       localStorage.setItem("riwayatSewa", JSON.stringify(fixedData));
       setRiwayat(fixedData);
       return fixedData;
-    } catch (error) {
-      console.error("Error loading data:", error);
+    } catch {
       return [];
     }
   };
 
-  onMount(() => {
-    console.log("Dashboard mounted, loading data...");
-    const data = loadRiwayatData();
-    console.log("Loaded data:", data);
-
-    // Setup Chart
-    try {
-      root = am5.Root.new("chartdiv");
-
-      const myTheme = am5.Theme.new(root);
-      myTheme.rule("Label", []).setAll({ fill: am5.color(0x3F5B8B), fontSize: 14 });
-      myTheme.rule("Grid", []).setAll({ stroke: am5.color(0xE3ECF7) });
-      myTheme.rule("AxisLabel", []).setAll({ fill: am5.color(0x6C5E82), fontSize: 12 });
-
-      root.setThemes([am5themes_Animated.new(root), myTheme]);
-
-      const chart = root.container.children.push(
-        am5xy.XYChart.new(root, {
-          panX: true,
-          panY: false,
-          wheelX: "panX",
-          wheelY: "zoomX",
-          layout: root.verticalLayout,
-        })
-      );
-
-      const xAxis = chart.xAxes.push(
-        am5xy.CategoryAxis.new(root, {
-          categoryField: "bulan",
-          renderer: am5xy.AxisRendererX.new(root, { minGridDistance: 30 }),
-        })
-      );
-
-      const yAxis = chart.yAxes.push(
-        am5xy.ValueAxis.new(root, {
-          renderer: am5xy.AxisRendererY.new(root, {}),
-        })
-      );
-
-      const series = chart.series.push(
-        am5xy.ColumnSeries.new(root, {
-          name: "Penyewaan",
-          xAxis,
-          yAxis,
-          valueYField: "jumlah",
-          categoryXField: "bulan",
-        })
-      );
-
-      series.columns.template.setAll({
-        fill: am5.color(0x3F5B8B),
-        stroke: am5.color(0x3F5B8B),
-        cornerRadiusTL: 5,
-        cornerRadiusTR: 5,
-      });
-
-      const months = ["Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
-      const chartData = months.map((bulan) => ({ bulan, jumlah: 0 }));
-
-      data.forEach((item: RiwayatItem) => {
-        try {
-          const date = new Date(item.date);
-          const monthIndex = date.getMonth();
-          if (monthIndex >= 6 && monthIndex <= 11) {
-            chartData[monthIndex - 6].jumlah += 1;
-          }
-        } catch (error) {
-          console.error("Error parsing date:", item.date);
-        }
-      });
-
-      xAxis.data.setAll(chartData);
-      series.data.setAll(chartData);
-    } catch (error) {
-      console.error("Error setting up chart:", error);
-    }
-  });
-
-  onCleanup(() => {
-    if (root) {
-      root.dispose();
-    }
-  });
-
-  // Hitung statistik berdasarkan status - Ubah jadi createMemo untuk reactivity
-  const statusCounts = createMemo(() => {
-    const data = riwayat();
-    console.log("Calculating status counts for data:", data);
-    
-    const counts = {
-      diproses: data.filter(r => r.status === "Diproses").length,
-      dikirim: data.filter(r => r.status === "Dikirim").length,
-      selesai: data.filter(r => r.status === "Selesai").length
-    };
-    
-    console.log("Status counts:", counts);
-    console.log("All statuses:", data.map(r => r.status));
-    
-    return counts;
-  });
-
-  // Handler untuk navigasi ke riwayat
-  const goToRiwayat = () => {
-    navigate("/riwayat");
-  };
-
-  // Handler untuk navigasi ke tracking detail
-  const goToTracking = (id: number) => {
-    navigate(`/tracking/${id}`);
-  };
-
-  // Format date untuk display - SAMA seperti di Riwayat.jsx
+  // Helper format tanggal
   const formatDateRange = (dateString: string, duration: string) => {
+    if (!dateString) return "-";
     try {
       const start = new Date(dateString);
-      // Parse duration - ambil angka aja dari string "3 hari" -> 3
-      const durationNum = parseInt(duration.toString().replace(/\D/g, ''));
-      
-      if (isNaN(start.getTime()) || isNaN(durationNum)) {
-        return "Invalid Date";
-      }
-      
+      const durationNum = parseInt(duration?.toString().replace(/\D/g, "")) || 0;
+
+      if (isNaN(start.getTime())) return "-";
+
       const end = new Date(start);
       end.setDate(start.getDate() + durationNum);
-      
+
       const formatter = new Intl.DateTimeFormat("id-ID", {
         day: "2-digit",
         month: "long",
         year: "numeric",
       });
-      
-      return `${formatter.format(start)} - ${formatter.format(end)}`;
-    } catch (error) {
-      console.error("Error formatting date:", error);
-      return "Invalid Date";
+
+      return durationNum > 0
+        ? `${formatter.format(start)} - ${formatter.format(end)}`
+        : formatter.format(start);
+    } catch {
+      return "-";
     }
   };
 
-  // Get status color
+  // Helper format harga
+  const formatPrice = (price: string | number) => {
+    const num = parseInt(price as string);
+    if (isNaN(num) || num <= 0) return "Rp 0";
+    return `Rp ${num.toLocaleString("id-ID")}`;
+  };
+
+  // Chart setup
+  onMount(() => {
+    const data = loadRiwayatData();
+
+    root = am5.Root.new("chartdiv");
+
+    const myTheme = am5.Theme.new(root);
+    myTheme.rule("Label", []).setAll({ fill: am5.color(0x3F5B8B), fontSize: 14 });
+    myTheme.rule("Grid", []).setAll({ stroke: am5.color(0xE3ECF7) });
+    myTheme.rule("AxisLabel", []).setAll({ fill: am5.color(0x6C5E82), fontSize: 12 });
+
+    root.setThemes([am5themes_Animated.new(root), myTheme]);
+
+    const chart = root.container.children.push(
+      am5xy.XYChart.new(root, {
+        panX: true,
+        panY: false,
+        wheelX: "panX",
+        wheelY: "zoomX",
+        layout: root.verticalLayout,
+      })
+    );
+
+    const xAxis = chart.xAxes.push(
+      am5xy.CategoryAxis.new(root, {
+        categoryField: "bulan",
+        renderer: am5xy.AxisRendererX.new(root, { minGridDistance: 30 }),
+      })
+    );
+
+    const yAxis = chart.yAxes.push(
+      am5xy.ValueAxis.new(root, {
+        renderer: am5xy.AxisRendererY.new(root, {}),
+      })
+    );
+
+    const series = chart.series.push(
+      am5xy.ColumnSeries.new(root, {
+        name: "Penyewaan",
+        xAxis,
+        yAxis,
+        valueYField: "jumlah",
+        categoryXField: "bulan",
+      })
+    );
+
+    series.columns.template.setAll({
+      fill: am5.color(0x3F5B8B),
+      stroke: am5.color(0x3F5B8B),
+      cornerRadiusTL: 5,
+      cornerRadiusTR: 5,
+    });
+
+    const months = ["Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+    const chartData = months.map((bulan) => ({ bulan, jumlah: 0 }));
+
+    data.forEach((item: RiwayatItem) => {
+      if (!item.date) return;
+      const date = new Date(item.date);
+      if (isNaN(date.getTime())) return;
+      const monthIndex = date.getMonth();
+      if (monthIndex >= 6 && monthIndex <= 11) {
+        chartData[monthIndex - 6].jumlah += 1;
+      }
+    });
+
+    xAxis.data.setAll(chartData);
+    series.data.setAll(chartData);
+  });
+
+  onCleanup(() => {
+    if (root) root.dispose();
+  });
+
+  // Status count reactive
+  const statusCounts = createMemo(() => {
+    const data = riwayat();
+    return {
+      diproses: data.filter((r) => r.status === "Diproses").length,
+      dikirim: data.filter((r) => r.status === "Dikirim").length,
+      selesai: data.filter((r) => r.status === "Selesai").length,
+    };
+  });
+
+  const goToRiwayat = () => navigate("/riwayat");
+  const goToTracking = (id: number) => navigate(`/tracking/${id}`);
+
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "Diproses": return "bg-yellow-400";
-      case "Dikirim": return "bg-blue-400";
-      case "Selesai": return "bg-green-500";
-      default: return "bg-gray-400";
+      case "Diproses":
+        return "bg-yellow-400";
+      case "Dikirim":
+        return "bg-blue-400";
+      case "Selesai":
+        return "bg-green-500";
+      default:
+        return "bg-gray-400";
     }
   };
 
   return (
     <>
-      {/* Header dengan Tombol Navigasi */}
+      {/* Header */}
       <div class="flex justify-between items-center mb-6">
         <h1 class="text-2xl font-bold text-[#3F5B8B]">Dashboard Inventaris</h1>
         <button
@@ -211,53 +187,6 @@ export default function DashboardInventaris() {
           <Eye size={16} />
           Lihat Riwayat Lengkap
         </button>
-      </div>
-
-      {/* Debug Info & Test Data Button */}
-      <div class="mb-4 p-4 bg-blue-50 rounded-lg">
-        <div class="flex justify-between items-center mb-2">
-          <p class="text-sm text-blue-800">Debug: Total data di localStorage: {riwayat().length}</p>
-          <button
-            onClick={() => {
-              // Test data untuk debugging
-              const testData = [
-                {
-                  id: generateId(),
-                  name: "Tenda Camping",
-                  date: "2024-12-01",
-                  duration: "3 hari",
-                  price: "150000",
-                  status: "Diproses"
-                },
-                {
-                  id: generateId(),
-                  name: "Sleeping Bag",
-                  date: "2024-11-15", 
-                  duration: "2 hari",
-                  price: "75000",
-                  status: "Selesai"
-                },
-                {
-                  id: generateId(),
-                  name: "Backpack",
-                  date: "2024-12-05", 
-                  duration: "5 hari",
-                  price: "100000",
-                  status: "Dikirim"
-                }
-              ];
-              localStorage.setItem("riwayatSewa", JSON.stringify(testData));
-              setRiwayat(testData);
-              console.log("Test data added:", testData);
-            }}
-            class="px-3 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600"
-          >
-            Add Test Data
-          </button>
-        </div>
-        {riwayat().length > 0 && (
-          <p class="text-xs text-blue-600">Sample data: {JSON.stringify(riwayat()[0])}</p>
-        )}
       </div>
 
       {/* Statistik Cards */}
@@ -297,7 +226,7 @@ export default function DashboardInventaris() {
         ))}
       </div>
 
-      {/* Grafik Chart */}
+      {/* Chart */}
       <div class="bg-white shadow rounded-lg p-6 mb-6 animate-fade-in">
         <div class="flex justify-between items-center mb-4">
           <h3 class="text-xl font-semibold text-[#3F5B8B]">Grafik Penyewaan Bulanan</h3>
@@ -306,7 +235,7 @@ export default function DashboardInventaris() {
         <div id="chartdiv" class="w-full" style={{ height: "300px" }} />
       </div>
 
-      {/* Tabel Ringkasan - Format SAMA seperti di Riwayat.jsx */}
+      {/* Tabel */}
       <div class="bg-white shadow rounded-lg p-6 animate-fade-in">
         <div class="flex justify-between items-center mb-4">
           <h3 class="text-xl font-semibold text-[#3F5B8B]">Pesanan Terbaru</h3>
@@ -317,50 +246,69 @@ export default function DashboardInventaris() {
             Lihat Semua <Eye size={14} />
           </button>
         </div>
-        
+
         <div class="overflow-x-auto">
           <table class="min-w-full table-auto">
             <thead class="bg-gray-50">
               <tr>
-                <th class="px-4 py-2 text-left text-sm font-medium text-gray-700">Nama Barang</th>
-                <th class="px-4 py-2 text-left text-sm font-medium text-gray-700">Tanggal</th>
-                <th class="px-4 py-2 text-left text-sm font-medium text-gray-700">Durasi</th>
-                <th class="px-4 py-2 text-left text-sm font-medium text-gray-700">Harga</th>
-                <th class="px-4 py-2 text-left text-sm font-medium text-gray-700">Status</th>
+                <th class="px-4 py-2 text-left text-sm font-medium text-gray-700">
+                  Nama Barang
+                </th>
+                <th class="px-4 py-2 text-left text-sm font-medium text-gray-700">
+                  Tanggal
+                </th>
+                <th class="px-4 py-2 text-left text-sm font-medium text-gray-700">
+                  Durasi
+                </th>
+                <th class="px-4 py-2 text-left text-sm font-medium text-gray-700">
+                  Harga
+                </th>
+                <th class="px-4 py-2 text-left text-sm font-medium text-gray-700">
+                  Status
+                </th>
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-200">
               {riwayat().length === 0 ? (
                 <tr>
-                  <td colSpan={5} class="px-4 py-8 text-center text-gray-500">
+                  <td
+                    colSpan={5}
+                    class="px-4 py-8 text-center text-gray-500"
+                  >
                     Belum ada data pesanan
                   </td>
                 </tr>
               ) : (
-                // Sort berdasarkan tanggal terbaru, ambil 5 teratas
                 riwayat()
                   .slice()
-                  .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                  .sort(
+                    (a, b) =>
+                      new Date(b.date).getTime() -
+                      new Date(a.date).getTime()
+                  )
                   .slice(0, 5)
-                  .map((item, index) => (
+                  .map((item) => (
                     <tr class="hover:bg-gray-50">
-                      <td class="px-4 py-2 text-sm text-gray-900">{item.name}</td>
+                      <td class="px-4 py-2 text-sm text-gray-900">
+                        {item.name || "-"}
+                      </td>
                       <td class="px-4 py-2 text-sm text-gray-600">
                         {formatDateRange(item.date, item.duration)}
                       </td>
-                      <td class="px-4 py-2 text-sm text-gray-600">{item.duration}</td>
                       <td class="px-4 py-2 text-sm text-gray-600">
-                        {item.price && !isNaN(parseInt(item.price)) 
-                          ? `Rp ${parseInt(item.price).toLocaleString('id-ID')}`
-                          : "Rp NaN"
-                        }
+                        {item.duration || "-"}
+                      </td>
+                      <td class="px-4 py-2 text-sm text-gray-600">
+                        {formatPrice(item.price)}
                       </td>
                       <td class="px-4 py-2">
                         <button
                           onClick={() => item.id && goToTracking(item.id)}
-                          class={`px-3 py-1 rounded-full text-white text-xs font-medium ${getStatusColor(item.status)} hover:opacity-90 transition duration-150 cursor-pointer`}
+                          class={`px-3 py-1 rounded-full text-white text-xs font-medium ${getStatusColor(
+                            item.status
+                          )} hover:opacity-90 transition duration-150 cursor-pointer`}
                         >
-                          {item.status}
+                          {item.status || "-"}
                         </button>
                       </td>
                     </tr>
