@@ -200,14 +200,14 @@ export default function ProductDetail() {
 
   if (!product) {
     return (
-      <div class="max-w-7xl mx-auto p-6 bg-gray-50 min-h-screen">
-        <div class="text-center mt-20">
-          <div class="text-6xl mb-4">😵</div>
-          <h2 class="text-2xl font-bold text-gray-600 mb-2">Produk tidak ditemukan</h2>
-          <p class="text-gray-500 mb-6">Maaf, produk yang Anda cari tidak tersedia</p>
+      <div class="max-w-7xl mx-auto p-4 sm:p-6 bg-gray-50 min-h-screen">
+        <div class="text-center mt-10 sm:mt-20 px-4">
+          <div class="text-4xl sm:text-6xl mb-4">😵</div>
+          <h2 class="text-xl sm:text-2xl font-bold text-gray-600 mb-2">Produk tidak ditemukan</h2>
+          <p class="text-gray-500 mb-6 text-sm sm:text-base">Maaf, produk yang Anda cari tidak tersedia</p>
           <A
             href="/produk"
-            class="inline-flex items-center gap-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-blue-600 hover:to-blue-700 transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg"
+            class="inline-flex items-center gap-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-xl font-semibold hover:from-blue-600 hover:to-blue-700 transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg text-sm sm:text-base"
           >
             <ArrowLeftIcon />
             Kembali ke Produk
@@ -217,64 +217,99 @@ export default function ProductDetail() {
     );
   }
 
+  const addToCart = () => {
+    try {
+      // Dapatkan keranjang yang sudah ada
+      const existingCart = JSON.parse(localStorage.getItem("keranjang") || "[]");
+      const existingIndex = existingCart.findIndex((item: any) => item.id === product.id);
+
+      if (existingIndex !== -1) {
+        // Jika produk sudah ada, tambah quantity
+        existingCart[existingIndex].quantity += quantity();
+      } else {
+        // Jika produk belum ada, tambahkan sebagai item baru
+        existingCart.push({
+          id: product.id,
+          name: product.name,
+          price: product.price,
+          category: product.category,
+          img: product.img,
+          quantity: quantity(),
+        });
+      }
+
+      // Simpan kembali ke localStorage
+      localStorage.setItem("keranjang", JSON.stringify(existingCart));
+      
+      // Show success message
+      alert(`✔️ ${product.name} selama ${quantity()} hari berhasil ditambahkan ke keranjang!`);
+      
+      // Navigate to cart
+      navigate("/keranjang");
+    } catch (error) {
+      console.error("Error adding to cart:", error);
+      alert("Terjadi kesalahan saat menambahkan ke keranjang. Silakan coba lagi.");
+    }
+  };
+
   return (
-    <div class="max-w-7xl mx-auto p-6 bg-gray-50 min-h-screen">
+    <div class="max-w-7xl mx-auto p-3 sm:p-6 bg-gray-50 min-h-screen">
       {/* Main Product Card */}
-      <div class="bg-white rounded-2xl p-8 shadow-sm hover:shadow-lg transition-all duration-500 border border-gray-100">
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
+      <div class="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-8 shadow-sm hover:shadow-lg transition-all duration-500 border border-gray-100">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-12">
           {/* Product Image */}
           <div class="relative">
             {product.badge && (
-              <div class="absolute top-4 left-4 z-10">
-                <span class={`inline-flex items-center gap-1 px-4 py-2 text-sm font-bold rounded-full text-white shadow-lg ${product.badgeColor}`}>
+              <div class="absolute top-2 sm:top-4 left-2 sm:left-4 z-10">
+                <span class={`inline-flex items-center gap-1 px-2 sm:px-4 py-1 sm:py-2 text-xs sm:text-sm font-bold rounded-full text-white shadow-lg ${product.badgeColor}`}>
                   <StarIcon />
                   {product.badge}
                 </span>
               </div>
             )}
-            <div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl p-8 flex justify-center items-center min-h-[400px]">
+            <div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl sm:rounded-2xl p-4 sm:p-8 flex justify-center items-center min-h-[250px] sm:min-h-[400px]">
               <img
                 src={product.img}
                 alt={product.name}
-                class="w-80 h-80 object-contain transition-transform duration-500 hover:scale-110"
+                class="w-48 h-48 sm:w-80 sm:h-80 object-contain transition-transform duration-500 hover:scale-110"
               />
             </div>
           </div>
 
           {/* Product Info */}
-          <div class="space-y-6">
-            <div class="space-y-3">
-              <h1 class="text-4xl font-bold text-gray-800 leading-tight">{product.name}</h1>
-              <div class="flex items-center gap-4">
+          <div class="space-y-4 sm:space-y-6">
+            <div class="space-y-2 sm:space-y-3">
+              <h1 class="text-2xl sm:text-4xl font-bold text-gray-800 leading-tight">{product.name}</h1>
+              <div class="flex items-center gap-2 sm:gap-4">
                 <div class="flex items-center gap-2">
-                  <ShoppingCartIcon class="text-blue-500" />
-                  <span class="text-3xl font-bold text-blue-600">
+                  <ShoppingCartIcon class="text-blue-500 w-4 h-4 sm:w-5 sm:h-5" />
+                  <span class="text-xl sm:text-3xl font-bold text-blue-600">
                     Rp{product.price.toLocaleString("id-ID")}
                   </span>
                 </div>
-                <span class="text-lg text-gray-500 font-medium">/hari</span>
+                <span class="text-sm sm:text-lg text-gray-500 font-medium">/hari</span>
               </div>
             </div>
 
             {/* Rating Stars */}
             <div class="flex gap-1 items-center">
               {renderStars()}
-              <span class="ml-2 text-sm text-gray-500">(4.8/5)</span>
+              <span class="ml-2 text-xs sm:text-sm text-gray-500">(4.8/5)</span>
             </div>
 
             {/* Description */}
-            <div class="bg-gradient-to-r from-blue-50 to-purple-50 p-6 rounded-2xl border border-blue-100">
-              <p class="text-gray-700 text-lg leading-relaxed">{product.desc}</p>
+            <div class="bg-gradient-to-r from-blue-50 to-purple-50 p-4 sm:p-6 rounded-xl sm:rounded-2xl border border-blue-100">
+              <p class="text-gray-700 text-sm sm:text-lg leading-relaxed">{product.desc}</p>
             </div>
 
             {/* Product Specs */}
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div class="bg-gray-50 p-4 rounded-xl border border-gray-200 hover:border-blue-300 transition-all duration-300">
-                <div class="flex items-center gap-3 mb-2">
-                  <PackageIcon class="text-blue-500" />
-                  <span class="text-sm font-semibold text-gray-600">Stok</span>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+              <div class="bg-gray-50 p-3 sm:p-4 rounded-xl border border-gray-200 hover:border-blue-300 transition-all duration-300">
+                <div class="flex items-center gap-2 sm:gap-3 mb-2">
+                  <PackageIcon class="text-blue-500 w-4 h-4 sm:w-5 sm:h-5" />
+                  <span class="text-xs sm:text-sm font-semibold text-gray-600">Stok</span>
                 </div>
-                <span class={`text-lg font-bold ${
+                <span class={`text-sm sm:text-lg font-bold ${
                   product.stock > 5 ? 'text-green-600' : 
                   product.stock > 0 ? 'text-yellow-600' : 
                   'text-red-600'
@@ -283,20 +318,20 @@ export default function ProductDetail() {
                 </span>
               </div>
               
-              <div class="bg-gray-50 p-4 rounded-xl border border-gray-200 hover:border-blue-300 transition-all duration-300">
-                <div class="flex items-center gap-3 mb-2">
-                  <RulerIcon class="text-blue-500" />
-                  <span class="text-sm font-semibold text-gray-600">Ukuran</span>
+              <div class="bg-gray-50 p-3 sm:p-4 rounded-xl border border-gray-200 hover:border-blue-300 transition-all duration-300">
+                <div class="flex items-center gap-2 sm:gap-3 mb-2">
+                  <RulerIcon class="text-blue-500 w-4 h-4 sm:w-5 sm:h-5" />
+                  <span class="text-xs sm:text-sm font-semibold text-gray-600">Ukuran</span>
                 </div>
-                <span class="text-lg font-bold text-gray-800">{product.size}</span>
+                <span class="text-sm sm:text-lg font-bold text-gray-800">{product.size}</span>
               </div>
               
-              <div class="bg-gray-50 p-4 rounded-xl border border-gray-200 hover:border-blue-300 transition-all duration-300">
-                <div class="flex items-center gap-3 mb-2">
-                  <ScaleIcon class="text-blue-500" />
-                  <span class="text-sm font-semibold text-gray-600">Berat</span>
+              <div class="bg-gray-50 p-3 sm:p-4 rounded-xl border border-gray-200 hover:border-blue-300 transition-all duration-300 sm:col-span-1 col-span-1">
+                <div class="flex items-center gap-2 sm:gap-3 mb-2">
+                  <ScaleIcon class="text-blue-500 w-4 h-4 sm:w-5 sm:h-5" />
+                  <span class="text-xs sm:text-sm font-semibold text-gray-600">Berat</span>
                 </div>
-                <span class="text-lg font-bold text-gray-800">{product.weight}</span>
+                <span class="text-sm sm:text-lg font-bold text-gray-800">{product.weight}</span>
               </div>
             </div>
 
@@ -306,13 +341,13 @@ export default function ProductDetail() {
               <div class="relative">
                 <button
                   onClick={() => setDropdownOpen(!dropdownOpen())}
-                  class="w-full md:w-48 border-2 border-gray-200 px-6 py-4 rounded-xl flex items-center justify-between bg-white shadow-sm hover:border-blue-300 hover:shadow-md transition-all duration-300 font-medium"
+                  class="w-full sm:w-48 border-2 border-gray-200 px-4 sm:px-6 py-3 sm:py-4 rounded-xl flex items-center justify-between bg-white shadow-sm hover:border-blue-300 hover:shadow-md transition-all duration-300 font-medium text-sm sm:text-base"
                 >
                   <span>{quantity()} hari</span>
                   <ChevronDownIcon class={`transition-transform duration-300 ${dropdownOpen() ? "rotate-180" : ""}`} />
                 </button>
                 {dropdownOpen() && (
-                  <div class="absolute mt-2 bg-white shadow-xl border border-gray-200 rounded-xl w-full md:w-48 z-20 overflow-hidden">
+                  <div class="absolute mt-2 bg-white shadow-xl border border-gray-200 rounded-xl w-full sm:w-48 z-20 overflow-hidden">
                     <For each={[1, 2, 3, 4, 5, 6, 7]}>
                       {(day) => (
                         <button
@@ -320,7 +355,7 @@ export default function ProductDetail() {
                             setQuantity(day);
                             setDropdownOpen(false);
                           }}
-                          class="block w-full px-6 py-4 text-left hover:bg-gradient-to-r hover:from-blue-50 hover:to-blue-100 transition-all duration-300 font-medium"
+                          class="block w-full px-4 sm:px-6 py-3 sm:py-4 text-left hover:bg-gradient-to-r hover:from-blue-50 hover:to-blue-100 transition-all duration-300 font-medium text-sm sm:text-base"
                         >
                           {day} hari
                         </button>
@@ -332,60 +367,33 @@ export default function ProductDetail() {
             </div>
 
             {/* Action Buttons */}
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <button
-                class="bg-gradient-to-r from-blue-500 to-blue-600 text-white py-4 px-6 rounded-xl font-bold hover:from-blue-600 hover:to-blue-700 transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg flex items-center justify-center gap-3"
-                onClick={() => {
-  // Ambil keranjang saat ini
-  const existingCart = JSON.parse(localStorage.getItem("keranjang") || "[]");
-
-  // Cek apakah produk sudah ada di keranjang
-  const existingIndex = existingCart.findIndex((item: any) => item.id === product.id);
-
-  if (existingIndex !== -1) {
-    // Jika sudah ada, update quantity
-    existingCart[existingIndex].quantity += quantity();
-  } else {
-    // Jika belum ada, tambahkan
-    existingCart.push({
-      id: product.id,
-      name: product.name,
-      price: product.price,
-      category: product.category,
-      img: product.img,
-      quantity: quantity(),
-    });
-  }
-
-  // Simpan kembali ke localStorage
-  localStorage.setItem("keranjang", JSON.stringify(existingCart));
-
-  // Feedback dan navigate
-  alert(`✔️ ${product.name} selama ${quantity()} hari ditambahkan ke keranjang!`);
-  navigate("/keranjang");
-}}
-
+                class="bg-gradient-to-r from-blue-500 to-blue-600 text-white py-3 sm:py-4 px-4 sm:px-6 rounded-xl font-bold hover:from-blue-600 hover:to-blue-700 transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg flex items-center justify-center gap-2 sm:gap-3 text-sm sm:text-base"
+                onClick={addToCart}
               >
-                <ShoppingCartIcon />
-                Tambah ke Keranjang
+                <ShoppingCartIcon class="w-4 h-4 sm:w-5 sm:h-5" />
+                <span class="hidden sm:inline">Tambah ke Keranjang</span>
+                <span class="sm:hidden">Tambah</span>
               </button>
               
               <A
                 href="/produk"
-                class="border-2 border-blue-500 text-blue-500 py-4 px-6 rounded-xl text-center font-bold hover:bg-gradient-to-r hover:from-blue-50 hover:to-blue-100 transition-all duration-300 transform hover:scale-105 shadow-sm hover:shadow-md flex items-center justify-center gap-3"
+                class="border-2 border-blue-500 text-blue-500 py-3 sm:py-4 px-4 sm:px-6 rounded-xl text-center font-bold hover:bg-gradient-to-r hover:from-blue-50 hover:to-blue-100 transition-all duration-300 transform hover:scale-105 shadow-sm hover:shadow-md flex items-center justify-center gap-2 sm:gap-3 text-sm sm:text-base"
               >
-                <ArrowLeftIcon />
-                Kembali ke Produk
+                <ArrowLeftIcon class="w-4 h-4 sm:w-5 sm:h-5" />
+                <span class="hidden sm:inline">Kembali ke Produk</span>
+                <span class="sm:hidden">Kembali</span>
               </A>
             </div>
 
             {/* Tips Section */}
-            <div class="bg-gradient-to-r from-yellow-50 to-orange-50 p-6 rounded-2xl border border-yellow-200">
-              <div class="flex items-start gap-4">
-                <LightBulbIcon class="text-yellow-600 mt-1 flex-shrink-0" />
+            <div class="bg-gradient-to-r from-yellow-50 to-orange-50 p-4 sm:p-6 rounded-xl sm:rounded-2xl border border-yellow-200">
+              <div class="flex items-start gap-3 sm:gap-4">
+                <LightBulbIcon class="text-yellow-600 mt-1 flex-shrink-0 w-4 h-4 sm:w-5 sm:h-5" />
                 <div>
-                  <h4 class="font-bold text-yellow-800 mb-2">💡 Tips Penting</h4>
-                  <p class="text-yellow-700 text-sm leading-relaxed">
+                  <h4 class="font-bold text-yellow-800 mb-2 text-sm sm:text-base">💡 Tips Penting</h4>
+                  <p class="text-yellow-700 text-xs sm:text-sm leading-relaxed">
                     Pastikan cek stok & waktu pengambilan sebelum menyewa! Hubungi kami jika ada pertanyaan khusus tentang produk ini.
                   </p>
                 </div>
@@ -396,28 +404,28 @@ export default function ProductDetail() {
       </div>
 
       {/* Related Products */}
-      <div class="mt-16">
-        <div class="text-center mb-12">
-          <h2 class="text-3xl font-bold text-gray-800 mb-4">Produk Lainnya</h2>
-          <p class="text-gray-600">Temukan produk camping lainnya yang mungkin Anda butuhkan</p>
+      <div class="mt-8 sm:mt-16">
+        <div class="text-center mb-6 sm:mb-12 px-4">
+          <h2 class="text-2xl sm:text-3xl font-bold text-gray-800 mb-2 sm:mb-4">Produk Lainnya</h2>
+          <p class="text-gray-600 text-sm sm:text-base">Temukan produk camping lainnya yang mungkin Anda butuhkan</p>
         </div>
         
-        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          <For each={dummyProducts.filter(item => item.id !== product.id)}>
+        <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6">
+          <For each={dummyProducts.filter(item => item.id !== product.id).slice(0, 8)}>
             {(item) => (
               <div
-                class="bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-500 cursor-pointer p-4 border border-gray-100 hover:border-blue-200 transform hover:-translate-y-2 hover:scale-[1.02] group"
+                class="bg-white rounded-xl sm:rounded-2xl shadow-sm hover:shadow-xl transition-all duration-500 cursor-pointer p-2 sm:p-4 border border-gray-100 hover:border-blue-200 transform hover:-translate-y-1 sm:hover:-translate-y-2 hover:scale-[1.02] group"
                 onClick={() => navigate(`/produk/detail/${item.id}`)}
               >
-                <div class="relative mb-4">
+                <div class="relative mb-2 sm:mb-4">
                   {item.badge && (
-                    <div class="absolute top-2 left-2 z-10">
-                      <span class={`inline-block px-2 py-1 text-xs font-bold rounded-full text-white ${item.badgeColor}`}>
+                    <div class="absolute top-1 sm:top-2 left-1 sm:left-2 z-10">
+                      <span class={`inline-block px-1 sm:px-2 py-0.5 sm:py-1 text-xs font-bold rounded-full text-white ${item.badgeColor}`}>
                         {item.badge}
                       </span>
                     </div>
                   )}
-                  <div class="bg-gray-50 rounded-xl p-4 h-32 flex items-center justify-center overflow-hidden">
+                  <div class="bg-gray-50 rounded-lg sm:rounded-xl p-2 sm:p-4 h-24 sm:h-32 flex items-center justify-center overflow-hidden">
                     <img
                       src={item.img}
                       alt={item.name}
@@ -426,17 +434,17 @@ export default function ProductDetail() {
                   </div>
                 </div>
                 
-                <div class="space-y-2">
-                  <h3 class="font-bold text-gray-800 group-hover:text-blue-600 transition-colors duration-300 line-clamp-2">
+                <div class="space-y-1 sm:space-y-2">
+                  <h3 class="font-bold text-gray-800 group-hover:text-blue-600 transition-colors duration-300 line-clamp-2 text-xs sm:text-sm">
                     {item.name}
                   </h3>
                   <div class="flex items-center gap-1">
-                    <span class="text-blue-600 font-bold">
+                    <span class="text-blue-600 font-bold text-xs sm:text-sm">
                       Rp{item.price.toLocaleString("id-ID")}
                     </span>
                     <span class="text-xs text-gray-500">/hari</span>
                   </div>
-                  <div class={`text-xs font-semibold px-2 py-1 rounded-full inline-block ${
+                  <div class={`text-xs font-semibold px-1 sm:px-2 py-0.5 sm:py-1 rounded-full inline-block ${
                     item.stock > 5 ? 'bg-green-100 text-green-700' : 
                     item.stock > 0 ? 'bg-yellow-100 text-yellow-700' : 
                     'bg-red-100 text-red-700'
