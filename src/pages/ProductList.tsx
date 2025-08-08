@@ -108,12 +108,25 @@ const TruckIcon = () => (
   </svg>
 );
 
+const InfoIcon = () => (
+  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+  </svg>
+);
+
+const CloseIcon = () => (
+  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+  </svg>
+);
+
 export default function ProductList() {
   const [selectedCategory, setSelectedCategory] = createSignal("semua");
   const [searchQuery, setSearchQuery] = createSignal("");
   const [products, setProducts] = createSignal<Product[]>([]);
   const [rentedProducts, setRentedProducts] = createSignal<{[key: number]: string}>({});
   const [isLoaded, setIsLoaded] = createSignal(false);
+  const [showNotification, setShowNotification] = createSignal(true);
 
   onMount(() => {
     // Load products
@@ -201,6 +214,30 @@ export default function ProductList() {
       </div>
 
       <div class="relative z-10 max-w-7xl mx-auto p-3 sm:p-6">
+        {/* Notification Banner - Moved to top */}
+        {showNotification() && (
+          <div class="mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4 shadow-lg">
+            <div class="flex items-start gap-3">
+              <div class="flex-shrink-0 text-blue-600 mt-0.5">
+                <InfoIcon />
+              </div>
+              <div class="flex-1">
+                <h4 class="font-semibold text-blue-800 mb-1">Info Fitur Ulasan</h4>
+                <p class="text-sm text-blue-700">
+                  Fitur ulasan hanya tersedia setelah Anda menyelesaikan rental produk. 
+                  Selesaikan rental terlebih dahulu untuk memberikan ulasan dan rating.
+                </p>
+              </div>
+              <button
+                onClick={() => setShowNotification(false)}
+                class="flex-shrink-0 text-blue-400 hover:text-blue-600 transition-colors duration-200 p-1 rounded-full hover:bg-blue-100"
+              >
+                <CloseIcon />
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Header */}
         <div class={`text-center mb-6 sm:mb-8 transform transition-all duration-1000 ${
           isLoaded() ? 'translate-y-0 opacity-100' : 'translate-y-[-20px] opacity-0'
@@ -351,25 +388,15 @@ export default function ProductList() {
                           Berikan Ulasan
                         </A>
                       ) : (
-                        <div class="relative group">
+                        <div class="relative">
                           <button
                             disabled
                             class="w-full border-2 border-gray-300 text-gray-400 py-3 px-4 rounded-xl cursor-not-allowed bg-gray-50 font-medium transition-all duration-300 flex items-center justify-center gap-2 text-sm"
-                            title="Selesaikan rental terlebih dahulu untuk memberikan ulasan"
                           >
                             <LockIcon />
                             <span class="hidden sm:inline">Ulasan Terkunci</span>
                             <span class="sm:hidden">Terkunci</span>
                           </button>
-                          {/* Enhanced Tooltip */}
-                          <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-3 px-4 py-3 bg-gray-800 text-white text-xs rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap z-20 hidden sm:block shadow-2xl">
-                            <div class="flex items-center gap-2 mb-1">
-                              <LockIcon />
-                              <span class="font-semibold">Fitur Terkunci</span>
-                            </div>
-                            <p>Selesaikan rental produk ini untuk membuka ulasan</p>
-                            <div class="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-800"></div>
-                          </div>
                         </div>
                       )}
                     </div>
