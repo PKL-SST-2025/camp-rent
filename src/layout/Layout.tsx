@@ -11,17 +11,23 @@ type LayoutProps = {
   children: JSX.Element;
 };
 
-// Global notification system
+// Enhanced global notification system
 declare global {
   interface Window {
-    addNotification?: (message: string, type?: string) => void;
+    addNotification?: (message: string, type?: string, data?: any) => void;
   }
 }
 
 if (typeof window !== 'undefined') {
-  window.addNotification = window.addNotification || ((message: string, type: string = 'info') => {
+  window.addNotification = window.addNotification || ((message: string, type: string = 'info', data: any = {}) => {
     const event = new CustomEvent('newNotification', { 
-      detail: { message, type, timestamp: new Date().toISOString() } 
+      detail: { 
+        message, 
+        type, 
+        timestamp: new Date().toISOString(),
+        data,
+        id: `notif-${Date.now()}-${Math.random()}`
+      } 
     });
     window.dispatchEvent(event);
   });
@@ -30,19 +36,19 @@ if (typeof window !== 'undefined') {
 export default function Layout({ children }: LayoutProps) {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = createSignal(false);
-  const notifCount = () => notifList().length;
   const [showNotif, setShowNotif] = createSignal(false);
   const [showProfile, setShowProfile] = createSignal(false);
   const [showSettings, setShowSettings] = createSignal(false);
   const [showHelp, setShowHelp] = createSignal(false);
   const [openMenus, setOpenMenus] = createSignal<string[]>([]);
   const [toastMessage, setToastMessage] = createSignal("");
+  const [toastType, setToastType] = createSignal("");
   const [toastIcon, setToastIcon] = createSignal("");
   const [showEditModal, setShowEditModal] = createSignal(false);
   const [editName, setEditName] = createSignal("");
   const [editEmail, setEditEmail] = createSignal("");
   const [editPhone, setEditPhone] = createSignal("");
-  const [notifList, setNotifList] = createSignal<{message: string, type: string, timestamp: string, id: string}[]>([]);
+  const [notifList, setNotifList] = createSignal<{message: string, type: string, timestamp: string, id: string, data?: any}[]>([]);
   
   // Settings state
   const [darkMode, setDarkMode] = createSignal(false);
@@ -74,17 +80,12 @@ export default function Layout({ children }: LayoutProps) {
       setCurrentDate(dateString);
     };
 
-    // Update immediately
     updateDateTime();
-    
-    // Update every second
     const interval = setInterval(updateDateTime, 1000);
-    
-    // Cleanup
     return () => clearInterval(interval);
   });
 
-  // Ambil notifikasi dari localStorage saat halaman dimuat
+  // Enhanced notification system
   onMount(() => {
     const saved = JSON.parse(localStorage.getItem("notifikasi") || "[]");
     setNotifList(saved);
@@ -96,69 +97,159 @@ export default function Layout({ children }: LayoutProps) {
     setSoundEnabled(savedSettings.soundEnabled !== false);
     setLanguage(savedSettings.language || 'id');
     
-    // Tambah beberapa notifikasi contoh jika kosong
+    // Tambah notifikasi welcome jika kosong
     if (saved.length === 0) {
-      const defaultNotifs = [
-        {
-          message: "🎉 Selamat datang di CampRent!",
-          type: "welcome",
-          timestamp: new Date().toISOString(),
-          id: "welcome-1"
-        },
-        {
-          message: "📦 Sistem telah diperbarui dengan fitur baru",
-          type: "system",
-          timestamp: new Date().toISOString(),
-          id: "system-1"
-        }
-      ];
-      setNotifList(defaultNotifs);
-      localStorage.setItem("notifikasi", JSON.stringify(defaultNotifs));
+      const welcomeNotif = {
+        message: "🎉 Selamat datang di CampRent! Mulai jelajahi peralatan camping terbaik.",
+        type: "welcome",
+        timestamp: new Date().toISOString(),
+        id: "welcome-1",
+        data: { source: "system", priority: "high" }
+      };
+      setNotifList([welcomeNotif]);
+      localStorage.setItem("notifikasi", JSON.stringify([welcomeNotif]));
     }
 
-    // Listen for global notifications
+    // Enhanced notification listener
     const handleNewNotification = (event: Event) => {
-      const customEvent = event as CustomEvent<{message: string, type: string, timestamp: string}>;
-      const { message, type, timestamp } = customEvent.detail;
+      const customEvent = event as CustomEvent<{message: string, type: string, timestamp: string, data?: any, id?: string}>;
+      const { message, type, timestamp, data, id } = customEvent.detail;
+      
       const newNotif = {
         message,
         type,
         timestamp,
-        id: `notif-${Date.now()}-${Math.random()}`
+        id: id || `notif-${Date.now()}-${Math.random()}`,
+        data: data || {}
       };
       
-      const updated = [newNotif, ...notifList()];
+      const updated = [newNotif, ...notifList().slice(0, 49)]; // Keep last 50 notifications
       setNotifList(updated);
       localStorage.setItem("notifikasi", JSON.stringify(updated));
       
+      // Enhanced notification feedback
       if (soundEnabled() && notifications()) {
-        // Play notification sound (if available)
-        try {
-          const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSMFl');
-          audio.volume = 0.1;
-          audio.play().catch(() => {});
-        } catch (e) {}
+        playNotificationSound(type);
+      }
+      
+      // Show toast for important notifications
+      if (data?.showToast !== false) {
+        showToast(message, getNotifIcon(type), type);
       }
     };
 
     window.addEventListener('newNotification', handleNewNotification);
-    
-    return () => {
-      window.removeEventListener('newNotification', handleNewNotification);
-    };
+    return () => window.removeEventListener('newNotification', handleNewNotification);
   });
+
+  // Enhanced navigation items with proper structure based on actual files
+  const navItems = [
+    {
+      id: "dashboard",
+      label: "Dashboard",
+      icon: <Home class="w-5 h-5" />,
+      link: "/dashboard",
+      description: "Halaman utama dan ringkasan"
+    },
+    {
+      id: "produk",
+      label: "Produk",
+      icon: <ShoppingCart class="w-5 h-5" />,
+      description: "Katalog peralatan camping",
+      children: [
+        { label: "Daftar Produk", link: "/produk", description: "Lihat semua peralatan" },
+        { label: "Detail Produk", link: "/produk/detail/id", description: "Informasi lengkap produk" },
+      ]
+    },
+    {
+      id: "keranjang",
+      label: "Keranjang & Checkout",
+      icon: <Package class="w-5 h-5" />,
+      description: "Kelola pesanan Anda",
+      children: [
+        { label: "Keranjang Saya", link: "/keranjang", description: "Lihat item di keranjang" },
+        { label: "Checkout", link: "/checkout", description: "Proses pembayaran" },
+      ]
+    },
+    {
+      id: "riwayat",
+      label: "Riwayat & Tracking",
+      icon: <Clock class="w-5 h-5" />,
+      description: "Histori dan tracking pesanan",
+      children: [
+        { label: "Riwayat Pesanan", link: "/riwayat", description: "Riwayat lengkap pesanan" },
+        { label: "Tracking Pesanan", link: "/tracking/1", description: "Lacak status pesanan" },
+      ]
+    },
+    {
+      id: "ulasan",
+      label: "Ulasan",
+      icon: <Star class="w-5 h-5" />,
+      link: "/semuaulasan",
+      description: "Review dan rating produk"
+    },
+  ];
+  const notifCount = () => notifList().length;
 
   const toggleMenu = (id: string) => {
     setOpenMenus((prev) =>
       prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
     );
+    
+    // Add notification for menu interaction
+    if (typeof window !== 'undefined' && window.addNotification) {
+      const menuItem = navItems.find(item => item.id === id);
+      if (menuItem && !openMenus().includes(id)) {
+        window.addNotification(
+          `📂 Membuka menu ${menuItem.label}`, 
+          "navigation",
+          { showToast: false, source: "sidebar", menu: id }
+        );
+      }
+    }
   };
 
-  function showToast(msg: string, icon = "✅") {
+  // Enhanced toast with type-based styling
+  function showToast(msg: string, icon = "✅", type = "info") {
     setToastMessage(msg);
     setToastIcon(icon);
-    setTimeout(() => setToastMessage(""), 3000);
+    setToastType(type);
+    setTimeout(() => {
+      setToastMessage("");
+      setToastType("");
+      setToastIcon("");
+    }, 4000);
   }
+
+  // Enhanced sound system
+  const playNotificationSound = (type: string) => {
+    try {
+      let frequency = 800;
+      switch (type) {
+        case 'success': case 'checkout': frequency = 1000; break;
+        case 'warning': case 'cart': frequency = 600; break;
+        case 'error': frequency = 400; break;
+        case 'info': default: frequency = 800; break;
+      }
+      
+      // Create a more pleasant notification sound
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+      gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+      
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.3);
+    } catch (e) {
+      console.log('Audio not available');
+    }
+  };
 
   const openEditModal = () => {
     const user = JSON.parse(localStorage.getItem("currentUser") || "{}");
@@ -166,21 +257,32 @@ export default function Layout({ children }: LayoutProps) {
     setEditEmail(user.email || "");
     setEditPhone(user.phone || "");
     setShowEditModal(true);
+    
+    if (typeof window !== 'undefined' && window.addNotification) {
+      window.addNotification(
+        "👤 Membuka form edit profil", 
+        "profile",
+        { action: "edit_profile_open", showToast: false }
+      );
+    }
   };
 
   const saveProfile = () => {
     const updatedUser = {
       name: editName(),
       email: editEmail(),
-      phone: editPhone()
+      phone: editPhone(),
+      lastUpdated: new Date().toISOString()
     };
     localStorage.setItem("currentUser", JSON.stringify(updatedUser));
     setShowEditModal(false);
-    showToast("Profil berhasil diperbarui!", "✅");
     
-    // Add notification
     if (typeof window !== 'undefined' && window.addNotification) {
-      window.addNotification("Profil Anda telah berhasil diperbarui", "profile");
+      window.addNotification(
+        `✅ Profil berhasil diperbarui! Halo ${editName()}`, 
+        "profile",
+        { action: "profile_updated", user: updatedUser }
+      );
     }
   };
 
@@ -189,87 +291,47 @@ export default function Layout({ children }: LayoutProps) {
       darkMode: darkMode(),
       notifications: notifications(),
       soundEnabled: soundEnabled(),
-      language: language()
+      language: language(),
+      lastUpdated: new Date().toISOString()
     };
     localStorage.setItem("userSettings", JSON.stringify(settings));
     setShowSettings(false);
-    showToast("Pengaturan berhasil disimpan!", "⚙️");
     
-    // Add notification
     if (typeof window !== 'undefined' && window.addNotification) {
-      window.addNotification("Pengaturan sistem telah disimpan", "settings");
+      window.addNotification(
+        "⚙️ Pengaturan sistem berhasil disimpan", 
+        "settings",
+        { action: "settings_saved", settings }
+      );
     }
   };
 
-  const navItems = [
-    {
-      id: "dashboard",
-      label: "Dashboard",
-      icon: <Home class="w-5 h-5" />,
-      link: "/dashboard"
-    },
-    {
-      id: "produk",
-      label: "Produk",
-      icon: <ShoppingCart class="w-5 h-5" />,
-      children: [
-        { label: "Daftar Produk", link: "/produk" },
-        { label: "Detail Produk", link: "/produk/detail/1" },
-      ]
-    },
-    {
-      id: "keranjang",
-      label: "Keranjang",
-      icon: <Package class="w-5 h-5" />,
-      children: [
-        { label: "Keranjang", link: "/keranjang" },
-        { label: "Checkout", link: "/checkout" },
-      ]
-    },
-    {
-      id: "riwayat",
-      label: "Riwayat",
-      icon: <Clock class="w-5 h-5" />,
-      children: [
-        { label: "Riwayat", link: "/riwayat" },
-        { label: "Tracking", link: "/tracking/1" },
-      ]
-    },
-    {
-      id: "ulasan",
-      label: "Ulasan",
-      icon: <Star class="w-5 h-5" />,
-      link: "/semuaulasan"
-    },
-  ];
-
   const clearNotifikasi = () => {
+    const count = notifList().length;
     setNotifList([]);
     localStorage.removeItem("notifikasi");
-    showToast("Semua notifikasi dihapus", "🗑️");
+    showToast(`🗑️ ${count} notifikasi berhasil dihapus`, "🗑️", "info");
   };
 
   const markAsRead = (id: string) => {
-    const updated = notifList().filter((notif) => notif.id !== id);
+    const notif = notifList().find(n => n.id === id);
+    const updated = notifList().filter((n) => n.id !== id);
     setNotifList(updated);
     localStorage.setItem("notifikasi", JSON.stringify(updated));
-    showToast("Notifikasi dibaca", "👁️");
+    
+    if (notif) {
+      showToast(`👁️ "${notif.message.substring(0, 30)}..." ditandai dibaca`, "👁️", "info");
+    }
   };
 
   const getNotifIcon = (type: string) => {
-    switch (type) {
-      case 'product': return '🛍️';
-      case 'cart': return '🛒';
-      case 'checkout': return '💳';
-      case 'order': return '📦';
-      case 'tracking': return '🚚';
-      case 'review': return '⭐';
-      case 'system': return '⚙️';
-      case 'welcome': return '🎉';
-      case 'profile': return '👤';
-      case 'settings': return '⚙️';
-      default: return '🔔';
-    }
+    const icons: {[key: string]: string} = {
+      'product': '🛍️', 'cart': '🛒', 'checkout': '💳', 'order': '📦',
+      'tracking': '🚚', 'review': '⭐', 'system': '⚙️', 'welcome': '🎉',
+      'profile': '👤', 'settings': '⚙️', 'navigation': '📂',
+      'success': '✅', 'warning': '⚠️', 'error': '❌', 'info': '📢'
+    };
+    return icons[type] || '🔔';
   };
 
   const formatTime = (timestamp: string) => {
@@ -302,6 +364,23 @@ export default function Layout({ children }: LayoutProps) {
     return () => document.removeEventListener('click', handleClickOutside);
   });
 
+  // Enhanced sidebar close handler
+  const handleSidebarItemClick = (label: string, link?: string) => {
+    setSidebarOpen(false);
+    
+    if (typeof window !== 'undefined' && window.addNotification) {
+      window.addNotification(
+        `🔗 Navigasi ke ${label}`, 
+        "navigation",
+        { 
+          action: "navigation", 
+          destination: link || label,
+          showToast: false 
+        }
+      );
+    }
+  };
+
   return (
     <div class="min-h-screen bg-gradient-to-br from-[#CDE8FF] to-[#FFF0DA] p-4">
       <div class="flex flex-col md:flex-row h-[calc(100vh-2rem)] rounded-2xl overflow-hidden shadow-xl">
@@ -309,69 +388,135 @@ export default function Layout({ children }: LayoutProps) {
         {/* Mobile Topbar */}
         <div class="md:hidden flex justify-between items-center text-[#3F3F3F] bg-gradient-to-r from-[#E0D4FD] to-[#CDE8FF] px-4 py-3 rounded-t-xl">
           <span class="font-bold text-lg">CampRent</span>
-          <div class="flex items-center gap-2">
+          <div class="flex items-center gap-3">
             <div class="text-xs text-center">
               <div class="font-semibold">{currentTime()}</div>
               <div class="text-[10px] opacity-75">{currentDate().split(',')[0]}</div>
             </div>
-            <button onClick={() => setSidebarOpen(true)}>
-              <Menu />
+            <button 
+              onClick={() => {
+                setSidebarOpen(true);
+                if (typeof window !== 'undefined' && window.addNotification) {
+                  window.addNotification(
+                    "📱 Menu sidebar dibuka", 
+                    "navigation",
+                    { action: "sidebar_opened", platform: "mobile", showToast: false }
+                  );
+                }
+              }}
+              class="p-2 hover:bg-white/20 rounded-lg transition-colors"
+            >
+              <Menu class="w-5 h-5" />
             </button>
           </div>
         </div>
 
-        {/* Mobile Sidebar */}
+        {/* Enhanced Mobile Sidebar */}
         <Show when={sidebarOpen()}>
-          <div class="fixed inset-0 bg-black/40 z-40" onClick={() => setSidebarOpen(false)} />
-          <aside class="fixed top-0 left-0 w-64 h-full bg-gradient-to-b from-[#E0D4FD] to-[#CDE8FF] text-[#3F3F3F] z-50 shadow-lg p-4 overflow-y-auto">
-            <div class="flex justify-between items-center mb-6">
-              <span class="text-xl font-bold">CampRent</span>
-              <button onClick={() => setSidebarOpen(false)}>
-                <X />
-              </button>
+          <div class="fixed inset-0 bg-black/40 z-40 backdrop-blur-sm" onClick={() => setSidebarOpen(false)} />
+          <aside class="fixed top-0 left-0 w-80 h-full bg-gradient-to-b from-[#E0D4FD] to-[#CDE8FF] text-[#3F3F3F] z-50 shadow-2xl overflow-y-auto">
+            {/* Sidebar Header */}
+            <div class="sticky top-0 bg-gradient-to-r from-[#F4A6B8] to-[#E91E63] text-white p-4 shadow-lg">
+              <div class="flex justify-between items-center">
+                <div>
+                  <span class="text-xl font-bold">CampRent</span>
+                  <p class="text-sm opacity-90">Sewa Peralatan Camping</p>
+                </div>
+                <button 
+                  onClick={() => setSidebarOpen(false)}
+                  class="p-2 hover:bg-white/20 rounded-lg transition-colors"
+                >
+                  <X class="w-5 h-5" />
+                </button>
+              </div>
             </div>
-            <nav class="flex flex-col gap-y-4 mt-10">
+
+            {/* User Info Card */}
+            <div class="p-4">
+              <div class="bg-white/30 backdrop-blur rounded-xl p-4 mb-4">
+                <div class="flex items-center gap-3">
+                  <div class="w-12 h-12 bg-gradient-to-r from-[#F4A6B8] to-[#E91E63] rounded-xl flex items-center justify-center text-white">
+                    <User class="w-6 h-6" />
+                  </div>
+                  <div class="flex-1">
+                    <div class="font-semibold text-sm">
+                      {JSON.parse(localStorage.getItem("currentUser") || "{}").name || "Admin User"}
+                    </div>
+                    <div class="text-xs text-gray-600">
+                      {JSON.parse(localStorage.getItem("currentUser") || "{}").email || "admin@camprent.com"}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Enhanced Navigation */}
+            <nav class="px-4 pb-6 space-y-2">
               {navItems.map((item) => {
                 const isActive = location.pathname === item.link;
                 const isOpen = openMenus().includes(item.id);
+                
                 return item.children ? (
-                  <div class="flex flex-col gap-1">
+                  <div class="space-y-1">
                     <button
                       type="button"
-                      class="flex items-center gap-3 px-4 py-2 rounded-lg font-semibold w-full text-left hover:bg-white/10 justify-between transition-all"
+                      class="flex items-center gap-3 px-4 py-3 rounded-xl font-medium w-full text-left hover:bg-white/20 transition-all group"
                       onClick={() => toggleMenu(item.id)}
                     >
-                      <div class="flex items-center gap-3">
-                        {item.icon}
-                        <span>{item.label}</span>
+                      <div class="flex items-center gap-3 flex-1">
+                        <div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center group-hover:bg-white/30 transition-colors">
+                          {item.icon}
+                        </div>
+                        <div class="flex-1">
+                          <div class="font-semibold text-sm">{item.label}</div>
+                          <div class="text-xs opacity-75">{item.description}</div>
+                        </div>
                       </div>
-                      {isOpen ? <ChevronUp class="w-4 h-4" /> : <ChevronDown class="w-4 h-4" />}
+                      <div class="transform transition-transform duration-200" classList={{ "rotate-180": isOpen }}>
+                        <ChevronDown class="w-4 h-4" />
+                      </div>
                     </button>
-                    <Show when={isOpen}>
-                      <div class="ml-8 flex flex-col gap-1">
-                        {item.children.map((sub) => (
-                          <A
-                            href={sub.link}
-                            onClick={() => setSidebarOpen(false)}
-                            class={`text-sm px-3 py-1 rounded-lg hover:bg-white/20 transition-all ${location.pathname === sub.link ? "bg-white/20 font-medium" : ""}`}
-                          >
-                            {sub.label}
-                          </A>
-                        ))}
-                      </div>
-                    </Show>
+                    
+                    <div class={`ml-6 space-y-1 transition-all duration-200 overflow-hidden ${isOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}>
+                      {item.children.map((sub) => (
+                        <A
+                          href={sub.link}
+                          onClick={() => handleSidebarItemClick(sub.label, sub.link)}
+                          class={`flex items-start gap-3 px-4 py-2 rounded-lg hover:bg-white/20 transition-all group ${
+                            location.pathname === sub.link ? "bg-white/25 shadow-sm" : ""
+                          }`}
+                        >
+                          <div class="w-2 h-2 bg-current rounded-full mt-2 opacity-60 group-hover:opacity-100" />
+                          <div class="flex-1">
+                            <div class="text-sm font-medium">{sub.label}</div>
+                            <div class="text-xs opacity-60">{sub.description}</div>
+                          </div>
+                        </A>
+                      ))}
+                    </div>
                   </div>
                 ) : (
                   <A
                     href={item.link}
-                    onClick={() => setSidebarOpen(false)}
-                    class={`flex items-center gap-3 px-4 py-2 rounded-lg transition-all ${
-                      isActive ? "bg-white/20 font-medium" : "hover:bg-white/10"
+                    onClick={() => handleSidebarItemClick(item.label, item.link)}
+                    class={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all group ${
+                      isActive 
+                        ? "bg-white/25 shadow-sm font-semibold" 
+                        : "hover:bg-white/15"
                     }`}
                   >
-                    <span class={`w-1 h-5 bg-[#F4A6B8] rounded ${isActive ? "opacity-100" : "opacity-0"}`} />
-                    {item.icon}
-                    <span>{item.label}</span>
+                    <div class={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${
+                      isActive 
+                        ? "bg-white/30" 
+                        : "bg-white/20 group-hover:bg-white/30"
+                    }`}>
+                      {item.icon}
+                    </div>
+                    <div class="flex-1">
+                      <div class="font-semibold text-sm">{item.label}</div>
+                      <div class="text-xs opacity-75">{item.description}</div>
+                    </div>
+                    {isActive && <div class="w-1 h-8 bg-[#F4A6B8] rounded-full" />}
                   </A>
                 );
               })}
@@ -379,60 +524,109 @@ export default function Layout({ children }: LayoutProps) {
           </aside>
         </Show>
 
-        {/* Desktop Sidebar */}
-        <aside class="hidden md:flex md:flex-col bg-gradient-to-b from-[#E0D4FD] to-[#CDE8FF] text-[#3F3F3F] w-20 hover:w-64 transition-all duration-300 p-4 gap-4 group">
-          <div class="text-xl font-bold bg-[#F4A6B8] rounded-lg px-3 py-1 text-white hidden group-hover:block">
-            CampRent
+        {/* Enhanced Desktop Sidebar */}
+        <aside class="hidden md:flex md:flex-col bg-gradient-to-b from-[#E0D4FD] to-[#CDE8FF] text-[#3F3F3F] w-20 hover:w-80 transition-all duration-300 p-4 gap-4 group shadow-xl">
+          {/* Logo */}
+          <div class="flex items-center gap-3">
+            <div class="text-xl font-bold bg-gradient-to-r from-[#F4A6B8] to-[#E91E63] rounded-xl p-3 text-white shadow-lg">
+              <span class="block group-hover:hidden">CR</span>
+              <span class="hidden group-hover:block whitespace-nowrap">CampRent</span>
+            </div>
+            <div class="hidden group-hover:block">
+              <div class="text-sm font-semibold text-gray-700">Sewa Camping</div>
+              <div class="text-xs text-gray-500">Peralatan Lengkap</div>
+            </div>
           </div>
-          <div class="text-xl font-bold bg-[#F4A6B8] rounded-lg p-2 text-white block group-hover:hidden">
-            CR
+
+          {/* Quick Stats - Only show on hover */}
+          <div class="hidden group-hover:block">
+            <div class="bg-white/30 backdrop-blur rounded-xl p-3 mb-2">
+              <div class="text-xs text-gray-600 mb-1">Status Akun</div>
+              <div class="text-sm font-semibold">
+                {JSON.parse(localStorage.getItem("currentUser") || "{}").name || "Admin User"}
+              </div>
+            </div>
           </div>
-          <nav class="flex-1 flex flex-col gap-y-4 mt-10">
+
+          {/* Enhanced Desktop Navigation */}
+          <nav class="flex-1 space-y-2">
             {navItems.map((item) => {
               const isActive = location.pathname === item.link;
               const isOpen = openMenus().includes(item.id);
+              
               return item.children ? (
-                <div class="flex flex-col gap-1">
+                <div class="space-y-1">
                   <button
                     type="button"
-                    class="flex items-center gap-3 px-3 py-2 rounded-lg font-semibold w-full text-left hover:bg-white/10 justify-between transition-all"
+                    class="flex items-center gap-3 px-3 py-3 rounded-xl font-medium w-full text-left hover:bg-white/15 transition-all group-hover:hover:bg-white/20 relative overflow-hidden"
                     onClick={() => toggleMenu(item.id)}
                   >
-                    <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center flex-shrink-0">
                       {item.icon}
-                      <span class="hidden group-hover:inline">{item.label}</span>
                     </div>
-                    <span class="hidden group-hover:inline">
-                      {isOpen ? <ChevronUp class="w-4 h-4" /> : <ChevronDown class="w-4 h-4" />}
-                    </span>
+                    <div class="hidden group-hover:flex items-center justify-between flex-1">
+                      <div>
+                        <div class="font-semibold text-sm">{item.label}</div>
+                        <div class="text-xs opacity-60">{item.description}</div>
+                      </div>
+                      <div class="transform transition-transform duration-200" classList={{ "rotate-180": isOpen }}>
+                        <ChevronDown class="w-4 h-4" />
+                      </div>
+                    </div>
                   </button>
-                  <Show when={isOpen}>
-                    <div class="ml-6 flex flex-col gap-1">
-                      {item.children.map((sub) => (
-                        <A
-                          href={sub.link}
-                          class={`text-sm px-3 py-1 rounded-lg hover:bg-white/20 transition-all ${location.pathname === sub.link ? "bg-white/20 font-medium" : ""}`}
-                        >
-                          {sub.label}
-                        </A>
-                      ))}
-                    </div>
-                  </Show>
+                  
+                  <div class={`hidden group-hover:block ml-6 space-y-1 transition-all duration-200 overflow-hidden ${isOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}>
+                    {item.children.map((sub) => (
+                      <A
+                        href={sub.link}
+                        class={`flex items-start gap-3 px-4 py-2 rounded-lg hover:bg-white/20 transition-all ${
+                          location.pathname === sub.link ? "bg-white/25 shadow-sm" : ""
+                        }`}
+                      >
+                        <div class="w-2 h-2 bg-current rounded-full mt-2 opacity-50" />
+                        <div class="flex-1">
+                          <div class="text-sm font-medium">{sub.label}</div>
+                          <div class="text-xs opacity-50">{sub.description}</div>
+                        </div>
+                      </A>
+                    ))}
+                  </div>
                 </div>
               ) : (
                 <A
                   href={item.link}
-                  class={`relative flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${
-                    isActive ? "bg-white/20 font-medium" : "hover:bg-white/10"
+                  class={`relative flex items-center gap-3 px-3 py-3 rounded-xl transition-all ${
+                    isActive 
+                      ? "bg-white/25 font-semibold shadow-sm" 
+                      : "hover:bg-white/15"
                   }`}
                 >
-                  <span class={`absolute left-0 top-2 bottom-2 w-1 bg-[#F4A6B8] rounded ${isActive ? "opacity-100" : "opacity-0"}`} />
-                  {item.icon}
-                  <span class="hidden group-hover:inline">{item.label}</span>
+                  <div class={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                    isActive ? "bg-white/30" : "bg-white/20"
+                  }`}>
+                    {item.icon}
+                  </div>
+                  <div class="hidden group-hover:block flex-1">
+                    <div class="font-semibold text-sm">{item.label}</div>
+                    <div class="text-xs opacity-60">{item.description}</div>
+                  </div>
+                  {isActive && <div class="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-[#F4A6B8] rounded-full" />}
                 </A>
               );
             })}
           </nav>
+
+          {/* Sidebar Footer - Only show on hover */}
+          <div class="hidden group-hover:block">
+            <div class="bg-white/20 rounded-xl p-3 text-center">
+              <div class="text-xs text-gray-600">
+                CampRent v2.0
+              </div>
+              <div class="text-xs text-gray-500">
+                © 2024 All rights reserved
+              </div>
+            </div>
+          </div>
         </aside>
 
         {/* Main Content */}
@@ -504,8 +698,15 @@ export default function Layout({ children }: LayoutProps) {
                                   <span class="text-lg flex-shrink-0 mt-0.5">{getNotifIcon(notif.type)}</span>
                                   <div class="flex-1">
                                     <p class="text-sm text-gray-700 leading-relaxed">{notif.message}</p>
-                                    <div class="text-xs text-gray-400 mt-1">
-                                      {formatTime(notif.timestamp)}
+                                    <div class="flex items-center justify-between mt-1">
+                                      <div class="text-xs text-gray-400">
+                                        {formatTime(notif.timestamp)}
+                                      </div>
+                                      <Show when={notif.data?.source}>
+                                        <div class="text-xs bg-gray-100 px-2 py-0.5 rounded text-gray-500">
+                                          {notif.data.source}
+                                        </div>
+                                      </Show>
                                     </div>
                                   </div>
                                 </div>
@@ -513,7 +714,7 @@ export default function Layout({ children }: LayoutProps) {
                                   class="text-xs text-blue-500 hover:text-blue-700 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap flex-shrink-0"
                                   onClick={() => markAsRead(notif.id)}
                                 >
-                                  Tandai Dibaca
+                                  Tutup
                                 </button>
                               </div>
                             </div>
@@ -568,7 +769,16 @@ export default function Layout({ children }: LayoutProps) {
                       
                       <button
                         class="w-full px-4 py-3 hover:bg-gray-50 cursor-pointer flex items-center gap-3 text-gray-700 transition-colors"
-                        onClick={() => setShowSettings(true)}
+                        onClick={() => {
+                          setShowSettings(true);
+                          if (typeof window !== 'undefined' && window.addNotification) {
+                            window.addNotification(
+                              "⚙️ Membuka pengaturan sistem", 
+                              "settings",
+                              { action: "settings_opened", showToast: false }
+                            );
+                          }
+                        }}
                       >
                         <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
                           <Settings class="w-4 h-4 text-green-600" />
@@ -581,7 +791,16 @@ export default function Layout({ children }: LayoutProps) {
                       
                       <button
                         class="w-full px-4 py-3 hover:bg-gray-50 cursor-pointer flex items-center gap-3 text-gray-700 transition-colors"
-                        onClick={() => setShowHelp(true)}
+                        onClick={() => {
+                          setShowHelp(true);
+                          if (typeof window !== 'undefined' && window.addNotification) {
+                            window.addNotification(
+                              "❓ Membuka pusat bantuan", 
+                              "info",
+                              { action: "help_opened", showToast: false }
+                            );
+                          }
+                        }}
                       >
                         <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
                           <HelpCircle class="w-4 h-4 text-purple-600" />
@@ -597,7 +816,13 @@ export default function Layout({ children }: LayoutProps) {
                           class="w-full px-4 py-3 hover:bg-red-50 cursor-pointer flex items-center gap-3 text-red-600 transition-colors"
                           onClick={() => {
                             localStorage.removeItem("currentUser");
-                            showToast("Berhasil logout!", "👋");
+                            if (typeof window !== 'undefined' && window.addNotification) {
+                              window.addNotification(
+                                "👋 Logout berhasil! Sampai jumpa lagi", 
+                                "info",
+                                { action: "logout", showToast: true }
+                              );
+                            }
                             setTimeout(() => window.location.href = "/Login", 1500);
                           }}
                         >
@@ -622,16 +847,41 @@ export default function Layout({ children }: LayoutProps) {
         </div>
       </div>
 
-      {/* Enhanced Toast */}
+      {/* Enhanced Toast with Type-based Styling */}
       <Show when={toastMessage()}>
-        <div class="fixed top-6 right-6 bg-white text-gray-800 px-6 py-4 rounded-xl shadow-2xl z-50 border-l-4 border-[#F4A6B8] flex items-center gap-3 animate-slide-in-right min-w-[300px]">
-          <div class="w-8 h-8 bg-[#F4A6B8] rounded-lg flex items-center justify-center text-white">
-            <span class="text-sm">{toastIcon()}</span>
+        <div class={`fixed top-6 right-6 bg-white text-gray-800 px-6 py-4 rounded-xl shadow-2xl z-50 flex items-center gap-3 animate-slide-in-right min-w-[320px] border-l-4 ${
+          toastType() === 'success' ? 'border-green-500' :
+          toastType() === 'warning' ? 'border-yellow-500' :
+          toastType() === 'error' ? 'border-red-500' :
+          'border-[#F4A6B8]'
+        }`}>
+          <div class={`w-10 h-10 rounded-lg flex items-center justify-center text-white text-lg ${
+            toastType() === 'success' ? 'bg-green-500' :
+            toastType() === 'warning' ? 'bg-yellow-500' :
+            toastType() === 'error' ? 'bg-red-500' :
+            'bg-[#F4A6B8]'
+          }`}>
+            {toastIcon()}
           </div>
-          <div>
+          <div class="flex-1">
             <div class="font-semibold text-sm">{toastMessage()}</div>
-            <div class="text-xs text-gray-500">Notifikasi sistem</div>
+            <div class="text-xs text-gray-500">
+              {toastType() === 'success' ? 'Berhasil' :
+               toastType() === 'warning' ? 'Peringatan' :
+               toastType() === 'error' ? 'Error' :
+               'Notifikasi sistem'} • {currentTime()}
+            </div>
           </div>
+          <button
+            onClick={() => {
+              setToastMessage("");
+              setToastType("");
+              setToastIcon("");
+            }}
+            class="text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            <X class="w-4 h-4" />
+          </button>
         </div>
       </Show>
 
@@ -739,7 +989,16 @@ export default function Layout({ children }: LayoutProps) {
                     </div>
                   </div>
                   <button
-                    onClick={() => setDarkMode(!darkMode())}
+                    onClick={() => {
+                      setDarkMode(!darkMode());
+                      if (typeof window !== 'undefined' && window.addNotification) {
+                        window.addNotification(
+                          `🌙 Mode ${!darkMode() ? 'gelap' : 'terang'} diaktifkan`, 
+                          "settings",
+                          { action: "theme_changed", darkMode: !darkMode(), showToast: false }
+                        );
+                      }
+                    }}
                     class={`w-12 h-6 rounded-full transition-colors relative ${darkMode() ? 'bg-indigo-600' : 'bg-gray-300'}`}
                   >
                     <div class={`w-5 h-5 bg-white rounded-full transition-transform absolute top-0.5 ${darkMode() ? 'translate-x-6' : 'translate-x-0.5'}`} />
@@ -756,7 +1015,16 @@ export default function Layout({ children }: LayoutProps) {
                   </div>
                   <select
                     value={language()}
-                    onChange={(e) => setLanguage(e.currentTarget.value)}
+                    onChange={(e) => {
+                      setLanguage(e.currentTarget.value);
+                      if (typeof window !== 'undefined' && window.addNotification) {
+                        window.addNotification(
+                          `🌐 Bahasa diubah ke ${e.currentTarget.selectedOptions[0].text}`, 
+                          "settings",
+                          { action: "language_changed", language: e.currentTarget.value, showToast: false }
+                        );
+                      }
+                    }}
                     class="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="id">Bahasa Indonesia</option>
@@ -782,7 +1050,16 @@ export default function Layout({ children }: LayoutProps) {
                     </div>
                   </div>
                   <button
-                    onClick={() => setNotifications(!notifications())}
+                    onClick={() => {
+                      setNotifications(!notifications());
+                      if (typeof window !== 'undefined' && window.addNotification) {
+                        window.addNotification(
+                          `🔔 Notifikasi ${!notifications() ? 'diaktifkan' : 'dinonaktifkan'}`, 
+                          "settings",
+                          { action: "notifications_toggled", enabled: !notifications(), showToast: false }
+                        );
+                      }
+                    }}
                     class={`w-12 h-6 rounded-full transition-colors relative ${notifications() ? 'bg-red-600' : 'bg-gray-300'}`}
                   >
                     <div class={`w-5 h-5 bg-white rounded-full transition-transform absolute top-0.5 ${notifications() ? 'translate-x-6' : 'translate-x-0.5'}`} />
@@ -798,7 +1075,16 @@ export default function Layout({ children }: LayoutProps) {
                     </div>
                   </div>
                   <button
-                    onClick={() => setSoundEnabled(!soundEnabled())}
+                    onClick={() => {
+                      setSoundEnabled(!soundEnabled());
+                      if (typeof window !== 'undefined' && window.addNotification) {
+                        window.addNotification(
+                          `🔊 Suara notifikasi ${!soundEnabled() ? 'diaktifkan' : 'dinonaktifkan'}`, 
+                          "settings",
+                          { action: "sound_toggled", enabled: !soundEnabled(), showToast: false }
+                        );
+                      }
+                    }}
                     class={`w-12 h-6 rounded-full transition-colors relative ${soundEnabled() ? 'bg-green-600' : 'bg-gray-300'}`}
                   >
                     <div class={`w-5 h-5 bg-white rounded-full transition-transform absolute top-0.5 ${soundEnabled() ? 'translate-x-6' : 'translate-x-0.5'}`} />
@@ -814,7 +1100,18 @@ export default function Layout({ children }: LayoutProps) {
                 </h3>
                 
                 <div class="space-y-2">
-                  <button class="w-full p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors text-left">
+                  <button 
+                    onClick={() => {
+                      if (typeof window !== 'undefined' && window.addNotification) {
+                        window.addNotification(
+                          "🔒 Membuka form ubah password", 
+                          "security",
+                          { action: "change_password_clicked", showToast: true }
+                        );
+                      }
+                    }}
+                    class="w-full p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors text-left"
+                  >
                     <div class="flex items-center gap-3">
                       <Lock class="w-5 h-5 text-orange-600" />
                       <div>
@@ -824,7 +1121,18 @@ export default function Layout({ children }: LayoutProps) {
                     </div>
                   </button>
                   
-                  <button class="w-full p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors text-left">
+                  <button 
+                    onClick={() => {
+                      if (typeof window !== 'undefined' && window.addNotification) {
+                        window.addNotification(
+                          "👁️ Membuka pengaturan privasi data", 
+                          "security",
+                          { action: "privacy_settings_clicked", showToast: true }
+                        );
+                      }
+                    }}
+                    class="w-full p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors text-left"
+                  >
                     <div class="flex items-center gap-3">
                       <Eye class="w-5 h-5 text-orange-600" />
                       <div>
@@ -999,7 +1307,13 @@ export default function Layout({ children }: LayoutProps) {
                       <button 
                         onClick={() => {
                           setShowHelp(false);
-                          showToast("Menghubungkan ke live chat...", "💬");
+                          if (typeof window !== 'undefined' && window.addNotification) {
+                            window.addNotification(
+                              "💬 Menghubungkan ke live chat...", 
+                              "info",
+                              { action: "live_chat_opened", showToast: true }
+                            );
+                          }
                         }}
                         class="p-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg hover:shadow-lg transition-all text-sm font-medium"
                       >
@@ -1009,7 +1323,13 @@ export default function Layout({ children }: LayoutProps) {
                       <button 
                         onClick={() => {
                           setShowHelp(false);
-                          showToast("Membuka panduan lengkap...", "📖");
+                          if (typeof window !== 'undefined' && window.addNotification) {
+                            window.addNotification(
+                              "📖 Membuka panduan lengkap...", 
+                              "info",
+                              { action: "guide_opened", showToast: true }
+                            );
+                          }
                         }}
                         class="p-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:shadow-lg transition-all text-sm font-medium"
                       >
@@ -1019,7 +1339,13 @@ export default function Layout({ children }: LayoutProps) {
                       <button 
                         onClick={() => {
                           setShowHelp(false);
-                          showToast("Mengirim laporan masalah...", "🐛");
+                          if (typeof window !== 'undefined' && window.addNotification) {
+                            window.addNotification(
+                              "🐛 Laporan masalah telah dikirim", 
+                              "info",
+                              { action: "bug_report_sent", showToast: true }
+                            );
+                          }
                         }}
                         class="p-3 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg hover:shadow-lg transition-all text-sm font-medium"
                       >
@@ -1038,17 +1364,50 @@ export default function Layout({ children }: LayoutProps) {
                 </h3>
                 
                 <div class="grid md:grid-cols-3 gap-4">
-                  <div class="p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow cursor-pointer">
+                  <div 
+                    class="p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow cursor-pointer"
+                    onClick={() => {
+                      if (typeof window !== 'undefined' && window.addNotification) {
+                        window.addNotification(
+                          "🏕️ Membuka panduan pemula camping", 
+                          "info",
+                          { action: "beginner_guide_opened", showToast: true }
+                        );
+                      }
+                    }}
+                  >
                     <div class="text-indigo-600 font-medium mb-2">🏕️ Panduan Pemula</div>
                     <div class="text-sm text-gray-600">Tips memilih peralatan camping yang tepat untuk pemula</div>
                   </div>
                   
-                  <div class="p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow cursor-pointer">
+                  <div 
+                    class="p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow cursor-pointer"
+                    onClick={() => {
+                      if (typeof window !== 'undefined' && window.addNotification) {
+                        window.addNotification(
+                          "💳 Membuka tutorial pembayaran", 
+                          "info",
+                          { action: "payment_guide_opened", showToast: true }
+                        );
+                      }
+                    }}
+                  >
                     <div class="text-green-600 font-medium mb-2">💳 Cara Pembayaran</div>
                     <div class="text-sm text-gray-600">Langkah-langkah melakukan pembayaran dengan mudah</div>
                   </div>
                   
-                  <div class="p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow cursor-pointer">
+                  <div 
+                    class="p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow cursor-pointer"
+                    onClick={() => {
+                      if (typeof window !== 'undefined' && window.addNotification) {
+                        window.addNotification(
+                          "📋 Membuka syarat dan ketentuan", 
+                          "info",
+                          { action: "terms_opened", showToast: true }
+                        );
+                      }
+                    }}
+                  >
                     <div class="text-orange-600 font-medium mb-2">📋 Syarat & Ketentuan</div>
                     <div class="text-sm text-gray-600">Ketentuan sewa dan kebijakan CampRent</div>
                   </div>
