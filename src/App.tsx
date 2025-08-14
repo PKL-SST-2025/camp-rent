@@ -44,7 +44,7 @@ export default function App() {
         isLoggedIn() ? <Layout><ProductList /></Layout> : <Navigate href="/login" />
       } />
 
-      <Route path="/produk/detail/:id" component={() =>
+      <Route path="/produk/detail/1" component={() =>
         isLoggedIn() ? <Layout><ProductDetail /></Layout> : <Navigate href="/login" />
       } />
 
@@ -64,7 +64,7 @@ export default function App() {
         isLoggedIn() ? <Layout><Riwayat /></Layout> : <Navigate href="/login" />
       } />
 
-      <Route path="/tracking/:id" component={() =>
+      <Route path="/tracking/1" component={() =>
         isLoggedIn() ? <Layout><Tracking /></Layout> : <Navigate href="/login" />
       } />
 
