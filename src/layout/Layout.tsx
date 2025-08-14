@@ -823,7 +823,7 @@ export default function Layout({ children }: LayoutProps) {
                                 { action: "logout", showToast: true }
                               );
                             }
-                            setTimeout(() => window.location.href = "/Login", 1500);
+                            setTimeout(() => window.location.href = "/login", 1500);
                           }}
                         >
                           <div class="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center">
