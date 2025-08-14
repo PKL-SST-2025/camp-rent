@@ -1,4 +1,5 @@
 import { Router, Route, Navigate } from "@solidjs/router";
+import { createSignal, JSX, onMount } from "solid-js";
 import Landing from './pages/Landing';
 import Register from './pages/Register';
 import Login from './pages/Login';
@@ -15,15 +16,44 @@ import Ulasan from './pages/Ulasan';
 import SemuaUlasan from './pages/SemuaUlasan';
 import Layout from './layout/Layout';
 
+// SSR-safe authentication check
 const isLoggedIn = () => {
+  // Check if we're in browser environment
+  if (typeof window === 'undefined') return false;
+  
   const current = localStorage.getItem('currentUser');
   if (!current) return false;
+  
   try {
     const user = JSON.parse(current);
     return !!(user?.email && user?.password);
   } catch {
     return false;
   }
+};
+
+// Protected Route Component
+const ProtectedRoute = (props: { children: number | boolean | Node | JSX.ArrayElement | (string & {}) | null | undefined; }) => {
+  const [isAuthenticated, setIsAuthenticated] = createSignal(false);
+  const [isLoading, setIsLoading] = createSignal(true);
+
+  onMount(() => {
+    // Check authentication only on client side
+    setIsAuthenticated(isLoggedIn());
+    setIsLoading(false);
+  });
+
+  return (
+    <>
+      {isLoading() ? (
+        <div>Loading...</div>
+      ) : isAuthenticated() ? (
+        <Layout>{props.children}</Layout>
+      ) : (
+        <Navigate href="/login" />
+      )}
+    </>
+  );
 };
 
 export default function App() {
@@ -34,47 +64,97 @@ export default function App() {
       <Route path="/register" component={Register} />
       <Route path="/login" component={Login} />
       <Route path="/forgot-password" component={ForgotPassword} />
-
+      
       {/* Protected routes */}
-      <Route path="/dashboard" component={() =>
-        isLoggedIn() ? <Layout><DashboardInventaris /></Layout> : <Navigate href="/login" />
-      } />
-
-      <Route path="/produk" component={() =>
-        isLoggedIn() ? <Layout><ProductList /></Layout> : <Navigate href="/login" />
-      } />
-
-      <Route path="/produk/detail/:id" component={() =>
-        isLoggedIn() ? <Layout><ProductDetail /></Layout> : <Navigate href="/login" />
-      } />
-
-      <Route path="/keranjang" component={() =>
-        isLoggedIn() ? <Layout><Keranjang /></Layout> : <Navigate href="/login" />
-      } />
-
-      <Route path="/checkout" component={() =>
-        isLoggedIn() ? <Layout><Checkout /></Layout> : <Navigate href="/login" />
-      } />
-
-      <Route path="/checkout-summary" component={() =>
-        isLoggedIn() ? <Layout><CheckoutSummary /></Layout> : <Navigate href="/login" />
-      } />
-
-      <Route path="/riwayat" component={() =>
-        isLoggedIn() ? <Layout><Riwayat /></Layout> : <Navigate href="/login" />
-      } />
-
-      <Route path="/tracking/:id" component={() =>
-        isLoggedIn() ? <Layout><Tracking /></Layout> : <Navigate href="/login" />
-      } />
-
-      <Route path="/ulasan/:id" component={() =>
-        isLoggedIn() ? <Layout><Ulasan /></Layout> : <Navigate href="/login" />
-      } />
-
-      <Route path="/semuaulasan" component={() =>
-        isLoggedIn() ? <Layout><SemuaUlasan /></Layout> : <Navigate href="/login" />
-      } />
+      <Route 
+        path="/dashboard" 
+        component={() => (
+          <ProtectedRoute>
+            <DashboardInventaris />
+          </ProtectedRoute>
+        )} 
+      />
+      
+      <Route 
+        path="/produk" 
+        component={() => (
+          <ProtectedRoute>
+            <ProductList />
+          </ProtectedRoute>
+        )} 
+      />
+      
+      <Route 
+        path="/produk/detail/:id" 
+        component={() => (
+          <ProtectedRoute>
+            <ProductDetail />
+          </ProtectedRoute>
+        )} 
+      />
+      
+      <Route 
+        path="/keranjang" 
+        component={() => (
+          <ProtectedRoute>
+            <Keranjang />
+          </ProtectedRoute>
+        )} 
+      />
+      
+      <Route 
+        path="/checkout" 
+        component={() => (
+          <ProtectedRoute>
+            <Checkout />
+          </ProtectedRoute>
+        )} 
+      />
+      
+      <Route 
+        path="/checkout-summary" 
+        component={() => (
+          <ProtectedRoute>
+            <CheckoutSummary />
+          </ProtectedRoute>
+        )} 
+      />
+      
+      <Route 
+        path="/riwayat" 
+        component={() => (
+          <ProtectedRoute>
+            <Riwayat />
+          </ProtectedRoute>
+        )} 
+      />
+      
+      <Route 
+        path="/tracking/:id" 
+        component={() => (
+          <ProtectedRoute>
+            <Tracking />
+          </ProtectedRoute>
+        )} 
+      />
+      
+      <Route 
+        path="/ulasan/:id" 
+        component={() => (
+          <ProtectedRoute>
+            <Ulasan />
+          </ProtectedRoute>
+        )} 
+      />
+      
+      <Route 
+        path="/semuaulasan" 
+        component={() => (
+          <ProtectedRoute>
+            <SemuaUlasan />
+          </ProtectedRoute>
+        )} 
+      />
     </Router>
   );
 }
